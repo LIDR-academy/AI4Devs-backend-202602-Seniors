@@ -2,6 +2,17 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export interface PositionCandidateApplicationRecord {
+    currentInterviewStep: number;
+    candidate: {
+        firstName: string;
+        lastName: string;
+    };
+    interviews: Array<{
+        score: number | null;
+    }>;
+}
+
 export class Position {
     id?: number;
     companyId: number;
@@ -82,6 +93,26 @@ export class Position {
         });
         if (!data) return null;
         return new Position(data);
+    }
+
+    static async findCandidateApplications(positionId: number): Promise<PositionCandidateApplicationRecord[]> {
+        return prisma.application.findMany({
+            where: { positionId },
+            select: {
+                currentInterviewStep: true,
+                candidate: {
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
+                interviews: {
+                    select: {
+                        score: true,
+                    },
+                },
+            },
+        });
     }
 }
 
