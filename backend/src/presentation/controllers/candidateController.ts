@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
-import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import {
+    addCandidate,
+    CandidateServiceError,
+    findCandidateById,
+    updateCandidateInterviewStep as updateCandidateInterviewStepService,
+} from '../../application/services/candidateService';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -28,6 +33,44 @@ export const getCandidateById = async (req: Request, res: Response) => {
         res.json(candidate);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+export const updateCandidateInterviewStep = async (req: Request, res: Response) => {
+    const candidateId = Number(req.params.id);
+    if (!Number.isInteger(candidateId) || candidateId <= 0) {
+        return res.status(400).json({ error: 'Invalid ID format' });
+    }
+
+    const { positionId, interviewStepId } = req.body || {};
+    if (
+        !Number.isInteger(positionId) ||
+        positionId <= 0 ||
+        !Number.isInteger(interviewStepId) ||
+        interviewStepId <= 0
+    ) {
+        return res.status(400).json({ error: 'Invalid positionId or interviewStepId format' });
+    }
+
+    try {
+        const application = await updateCandidateInterviewStepService(candidateId, positionId, interviewStepId);
+        return res.status(200).json({
+            message: 'Application updated successfully',
+            data: application,
+        });
+    } catch (error) {
+        if (
+            error instanceof CandidateServiceError ||
+            (typeof error === 'object' &&
+                error !== null &&
+                'statusCode' in error &&
+                typeof (error as { statusCode: unknown }).statusCode === 'number')
+        ) {
+            const serviceError = error as { statusCode: number; message?: string };
+            return res.status(serviceError.statusCode).json({ error: serviceError.message || 'Request failed' });
+        }
+
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
