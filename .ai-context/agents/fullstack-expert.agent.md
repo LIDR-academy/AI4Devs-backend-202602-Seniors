@@ -14,6 +14,20 @@ memory: project
 
 # FullStack Expert
 
+## Reference Documentation
+
+> Read these before any task. They describe the intended architecture and the quality bar to maintain.
+
+| Doc | Contents |
+|-----|----------|
+| [`docs/architecture.md`](../../docs/architecture.md) | Layer model, dependency rules, tech stack, known violations |
+| [`docs/project-structure.md`](../../docs/project-structure.md) | Full directory tree, naming conventions, where to place new files |
+| [`docs/backend.md`](../../docs/backend.md) | Entry point, routes, controllers, services, validation, error handling |
+| [`docs/frontend.md`](../../docs/frontend.md) | React structure, service layer, component responsibilities, routing |
+| [`docs/database.md`](../../docs/database.md) | All Prisma models, ERM diagram, migration commands, schema conventions |
+
+---
+
 ## Role
 
 Senior engineer owning the full stack: **PostgreSQL schema → Prisma → Express API → React UI**.
