@@ -1,8 +1,11 @@
+import { PrismaClient } from '@prisma/client';
 import { Candidate } from '../../domain/models/Candidate';
 import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+
+const prisma = new PrismaClient();
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -62,4 +65,38 @@ export const findCandidateById = async (id: number): Promise<Candidate | null> =
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export const updateCandidateStage = async (candidateId: number, stage: number) => {
+    const application = await prisma.application.findFirst({
+        where: { candidateId },
+        orderBy: { id: 'asc' },
+        include: {
+            position: {
+                include: {
+                    interviewFlow: {
+                        include: { interviewSteps: true },
+                    },
+                },
+            },
+        },
+    });
+
+    if (!application) {
+        throw new Error('Candidate not found or has no active application');
+    }
+
+    const validSteps = application.position.interviewFlow.interviewSteps;
+    if (!validSteps.some((step) => step.id === stage)) {
+        throw new Error('Invalid stage: the specified stage does not belong to the candidate\'s interview process');
+    }
+
+    return prisma.application.update({
+        where: { id: application.id },
+        data: { currentInterviewStep: stage },
+        include: {
+            candidate: true,
+            interviewStep: true,
+        },
+    });
 };

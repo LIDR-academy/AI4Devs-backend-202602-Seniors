@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "PowerShell(netstat *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Get-WmiObject *)",
+      "PowerShell(docker exec ai4devs-db-202603-seniors-db-1 *)",
+      "Bash(npx tsc *)",
+      "Bash(npx jest *)"
+    ]
+  }
+}
