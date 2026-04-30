@@ -14,7 +14,11 @@
       "Bash(cp -r .claude/agents/* .ai-context/agents/)",
       "Bash(rm -rf .claude/skills .claude/agents)",
       "Bash(ln -s ../.ai-context/agents .claude/agents)",
-      "Bash(grep -E \"\\\\.\\(json|yml|yaml|md|env\\)$|^[^.]\")"
+      "Bash(grep -E \"\\\\.\\(json|yml|yaml|md|env\\)$|^[^.]\")",
+      "Bash(npx tsc *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(npm install *)",
+      "Bash(node_modules/.bin/tsc *)"
     ]
   }
 }
