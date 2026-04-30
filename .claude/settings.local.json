@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/camarej4/code/git/cgm-otc-android/.ai-context/skills/**)",
+      "Read(//Users/camarej4/code/git/cgm-otc-android/.ai-context/agents/**)",
+      "Read(//Users/camarej4/code/git/cgm-otc-android/.ai-context/prompts/**)",
+      "Bash(mkdir -p /Users/camarej4/code/git/AI4Devs-backend-202602-Seniors/.claude/skills/refactor-patterns/references)",
+      "Bash(mkdir -p /Users/camarej4/code/git/AI4Devs-backend-202602-Seniors/.claude/skills/ddd-design/references)",
+      "Bash(mkdir -p /Users/camarej4/code/git/AI4Devs-backend-202602-Seniors/.claude/skills/hexagonal-arch/references)",
+      "Bash(mkdir -p /Users/camarej4/code/git/AI4Devs-backend-202602-Seniors/.claude/skills/solid-cupid/references)",
+      "Bash(mkdir -p /Users/camarej4/code/git/AI4Devs-backend-202602-Seniors/.claude/skills/design-patterns/references)",
+      "Bash(mkdir -p .ai-context/agents .ai-context/skills .ai-context/prompts .ai-context/instructions)",
+      "Bash(cp -r .claude/skills/* .ai-context/skills/)",
+      "Bash(cp -r .claude/agents/* .ai-context/agents/)",
+      "Bash(rm -rf .claude/skills .claude/agents)",
+      "Bash(ln -s ../.ai-context/agents .claude/agents)",
+      "Bash(grep -E \"\\\\.\\(json|yml|yaml|md|env\\)$|^[^.]\")"
+    ]
+  }
+}
