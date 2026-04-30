@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import { updateCandidateStage } from '../../application/services/candidateStageService';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -29,6 +30,33 @@ export const getCandidateById = async (req: Request, res: Response) => {
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
     }
+};
+
+export const updateCandidateStageController = async (req: Request, res: Response): Promise<void> => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+        res.status(400).json({ message: 'Invalid candidate ID' });
+        return;
+    }
+
+    const { currentInterviewStep } = req.body;
+    if (currentInterviewStep === undefined || !Number.isInteger(currentInterviewStep)) {
+        res.status(400).json({ message: 'currentInterviewStep is required and must be an integer' });
+        return;
+    }
+
+    const result = await updateCandidateStage(id, currentInterviewStep);
+
+    if (!result.success) {
+        if (result.error === 'CANDIDATE_NOT_FOUND') {
+            res.status(404).json({ message: 'Candidate not found' });
+        } else {
+            res.status(400).json({ message: 'Invalid interview step ID' });
+        }
+        return;
+    }
+
+    res.status(200).json(result.value);
 };
 
 export { addCandidate };
