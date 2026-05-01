@@ -237,6 +237,24 @@ async function main() {
       interviewFlowId: interviewFlow1.id,
       interviewTypeId: interviewType3.id,
       name: 'Manager Interview',
+      orderIndex: 3,
+    },
+  });
+
+  const interviewStep4 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow2.id,
+      interviewTypeId: interviewType1.id,
+      name: 'Initial Screening',
+      orderIndex: 1,
+    },
+  });
+
+  const interviewStep5 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow2.id,
+      interviewTypeId: interviewType2.id,
+      name: 'Technical Interview',
       orderIndex: 2,
     },
   });
@@ -275,7 +293,7 @@ async function main() {
       positionId: position2.id,
       candidateId: candidate1.id,
       applicationDate: new Date(),
-      currentInterviewStep: interviewStep2.id,
+      currentInterviewStep: interviewStep5.id,
     },
   });
 
@@ -312,7 +330,7 @@ async function main() {
       },
       {
         applicationId: application2.id,
-        interviewStepId: interviewStep1.id,
+        interviewStepId: interviewStep4.id,
         employeeId: employee1.id,
         interviewDate: new Date(),
         result: 'Passed',
