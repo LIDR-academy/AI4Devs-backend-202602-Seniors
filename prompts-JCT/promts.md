@@ -361,3 +361,173 @@ No new files required.
 - [ ] Only `currentInterviewStep` is modified — all other Application fields unchanged
 - [ ] TypeScript compiles without errors
 - [ ] No `any` types in modified or new code
+
+---
+
+## 4. Fix Database — Connection String + Seed Data
+
+**Agent**: FullStack Expert (`@.ai-context/agents/fullstack-expert.agent.md`)
+
+**Reference docs**:
+- `docs/database.md` — full schema, all models and relations
+- `docs/project-structure.md` — where to place new files
+
+---
+
+**Objective**: Fix two database issues that prevent the project from running correctly: a hardcoded connection string in `schema.prisma`, and the absence of seed data needed to test the Kanban endpoints.
+
+---
+
+### Issue 1 — Hardcoded Connection String
+
+**Current state** (`backend/prisma/schema.prisma`):
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://LTIdbUser:D1ymf8wyQEGthFR1E9xhCq@localhost:5432/LTIdb"
+}
+```
+
+**Problem**: credentials committed to source, not configurable per environment.
+
+**Fix**: replace with env var — `.env` already defines `DATABASE_URL`:
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+**Files to change**:
+| File | Action |
+|------|--------|
+| `backend/prisma/schema.prisma` | Replace hardcoded URL with `env("DATABASE_URL")` |
+| `.env.example` | Create with `DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/DB` as placeholder |
+
+Do NOT modify `.env` — `DATABASE_URL` is already defined there correctly.
+
+---
+
+### Issue 2 — Seed Data
+
+**Problem**: DB is empty — all Kanban endpoints return `[]` or 404.
+
+**Goal**: create realistic data that lets a developer verify all three Kanban endpoints immediately after running the seed.
+
+#### Seed file location
+
+`backend/prisma/seed.ts`
+
+#### Register seed in `backend/package.json`
+
+Add a `prisma` key:
+```json
+"prisma": {
+  "seed": "ts-node --transpile-only prisma/seed.ts"
+}
+```
+
+#### Seed dataset (implement exactly this)
+
+**InterviewTypes** (4):
+| id | name |
+|----|------|
+| 1 | HR Screen |
+| 2 | Technical Screen |
+| 3 | Technical Interview |
+| 4 | Final Interview |
+
+**InterviewFlow** (1): `"Standard Engineering Flow"`
+
+**InterviewSteps** (4, ordered, all in the flow above):
+| orderIndex | name | interviewType |
+|------------|------|---------------|
+| 1 | HR Screen | HR Screen |
+| 2 | Technical Screen | Technical Screen |
+| 3 | Technical Interview | Technical Interview |
+| 4 | Final Interview | Final Interview |
+
+**Company** (1): `LTI`
+
+**Employee** (1): Sarah Johnson, `sarah@lti.com`, role `HR Manager`, `isActive: true`
+
+**Position** (1): `Senior Backend Engineer` at LTI, using the flow above, `status: "Open"`, `isVisible: true`, `location: "Remote"`, `jobDescription: "Backend role"`, `salaryMin: 50000`, `salaryMax: 80000`
+
+**Candidates** (4):
+| firstName | lastName | email |
+|-----------|----------|-------|
+| John | Doe | john.doe@email.com |
+| Jane | Smith | jane.smith@email.com |
+| Carlos | García | carlos.garcia@email.com |
+| María | López | maria.lopez@email.com |
+
+**Applications** (4 — one per candidate, all for the position above):
+| Candidate | currentInterviewStep |
+|-----------|----------------------|
+| John Doe | Step 1 — HR Screen |
+| Jane Smith | Step 2 — Technical Screen |
+| Carlos García | Step 3 — Technical Interview |
+| María López | Step 4 — Final Interview |
+
+**Interviews** (give scores to all except John, to test null averageScore):
+| Application | interviewStep | employee | score | result |
+|-------------|---------------|----------|-------|--------|
+| Jane Smith | Step 1 | Sarah | 7 | Passed |
+| Carlos García | Step 1 | Sarah | 8 | Passed |
+| Carlos García | Step 2 | Sarah | 9 | Passed |
+| María López | Step 1 | Sarah | 8 | Passed |
+| María López | Step 2 | Sarah | 9 | Passed |
+| María López | Step 3 | Sarah | 10 | Passed |
+
+Expected `averageScore` after seed: John `null`, Jane `7.0`, Carlos `8.5`, María `9.0`.
+
+#### Seed implementation pattern
+
+Use `upsert` or `deleteMany` + `create` at the top to make the seed idempotent (safe to re-run):
+```typescript
+await prisma.interview.deleteMany();
+await prisma.application.deleteMany();
+// ... clear all tables in reverse FK order before inserting
+```
+
+---
+
+**Constraints**:
+- Do NOT use `createMany` with `skipDuplicates` — use `deleteMany` + `create` for clarity
+- Seed must be idempotent — running it twice must not fail or duplicate data
+- All FK references must use the IDs returned from prior `create` calls, not hardcoded integers
+- No `any` types in seed script
+- Do not modify existing migrations
+
+---
+
+**Expected Output**:
+| File | Action |
+|------|--------|
+| `backend/prisma/schema.prisma` | Edit — one line change (`url`) |
+| `.env.example` | Create — placeholder `DATABASE_URL` |
+| `backend/prisma/seed.ts` | Create — full idempotent seed |
+| `backend/package.json` | Edit — add `prisma.seed` key |
+
+---
+
+**How to run after implementation**:
+```bash
+# From repo root
+docker-compose up -d
+
+# From backend/
+npx prisma migrate dev   # only if schema changed
+npx prisma db seed
+npm run dev
+```
+
+**Acceptance Criteria**:
+- [ ] `schema.prisma` uses `env("DATABASE_URL")` — no hardcoded credentials
+- [ ] `.env.example` exists with placeholder (no real credentials)
+- [ ] `npx prisma db seed` runs without errors
+- [ ] Running seed twice does not fail or duplicate rows
+- [ ] `GET /positions/1/candidates` returns 4 candidates with correct steps and scores
+- [ ] `GET /positions/1/interviewSteps` returns 4 steps in `orderIndex` order
+- [ ] John Doe has `averageScore: null`
+- [ ] María López has `averageScore: 9.0`
