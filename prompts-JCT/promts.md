@@ -531,3 +531,199 @@ npm run dev
 - [ ] `GET /positions/1/interviewSteps` returns 4 steps in `orderIndex` order
 - [ ] John Doe has `averageScore: null`
 - [ ] María López has `averageScore: 9.0`
+
+---
+
+## 5. Tests — New Endpoints
+
+**Agent**: FullStack Expert (`@.ai-context/agents/fullstack-expert.agent.md`)
+
+**Reference docs**:
+- `docs/backend.md` — error-handling table, HTTP status conventions
+- `docs/database.md` — model shapes used in assertions
+
+---
+
+**Objective**: Write a complete test suite for the three new endpoints and their service functions. Two layers: unit tests (service logic, Prisma mocked) and integration tests (HTTP layer, service mocked).
+
+---
+
+**Context**:
+
+Test framework already installed: Jest + ts-jest (`jest.config.js` uses `preset: 'ts-jest'`, `testEnvironment: 'node'`). No existing tests in the project.
+
+**supertest is NOT installed** — add it as a devDependency before writing integration tests:
+```bash
+npm install --save-dev supertest @types/supertest
+```
+
+Functions and files under test:
+
+| Function | File |
+|----------|------|
+| `getPositionCandidates` | `src/application/services/positionService.ts` |
+| `getPositionInterviewSteps` | `src/application/services/positionService.ts` |
+| `updateCandidateStage` | `src/application/services/candidateService.ts` |
+| `GET /positions/:id/candidates` | `src/routes/positionRoutes.ts` |
+| `GET /positions/:id/interviewSteps` | `src/routes/positionRoutes.ts` |
+| `PUT /candidates/:id/stage` | `src/routes/candidateRoutes.ts` |
+
+---
+
+### Part 1 — Unit Tests (service layer)
+
+**Prisma mock pattern** — use at the top of each service test file:
+
+```typescript
+const mockPrisma = {
+    position:      { findUnique: jest.fn() },
+    candidate:     { findUnique: jest.fn() },
+    application:   { findFirst: jest.fn(), update: jest.fn() },
+    interviewStep: { findUnique: jest.fn() },
+};
+
+jest.mock('@prisma/client', () => ({
+    PrismaClient: jest.fn(() => mockPrisma),
+}));
+```
+
+Call `jest.clearAllMocks()` in `beforeEach`.
+
+---
+
+#### `src/__tests__/unit/positionService.test.ts`
+
+**`getPositionCandidates`** — 6 cases:
+
+| # | Scenario | Mock setup | Expected result |
+|---|----------|------------|-----------------|
+| 1 | Position not found | `findUnique` returns `null` | returns `null` |
+| 2 | Position exists, no applications | `findUnique` returns `{ applications: [] }` | returns `[]` |
+| 3 | One application, no interviews | applications with `interviews: []` | `averageScore: null` |
+| 4 | One application, one score | `interviews: [{ score: 7 }]` | `averageScore: 7` |
+| 5 | One application, multiple scores | `interviews: [{ score: 8 }, { score: 9 }]` | `averageScore: 8.5` |
+| 6 | One application, mixed null/numeric scores | `interviews: [{ score: 6 }, { score: null }]` | `averageScore: 6` (null excluded) |
+
+Also assert DTO shape on case 4:
+```typescript
+expect(result[0]).toEqual({
+    candidateId: expect.any(Number),
+    applicationId: expect.any(Number),
+    fullName: 'Jane Smith',
+    currentInterviewStep: 'Technical Screen',
+    currentInterviewStepId: expect.any(Number),
+    averageScore: 7,
+});
+```
+
+**`getPositionInterviewSteps`** — 3 cases:
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 1 | Position not found | returns `null` |
+| 2 | Position with 3 steps | returns array of 3 `InterviewStepDTO` |
+| 3 | Steps returned in `orderIndex` order | assert `result[0].orderIndex < result[1].orderIndex` |
+
+---
+
+#### `src/__tests__/unit/candidateService.test.ts`
+
+**`updateCandidateStage`** — 5 cases:
+
+| # | Scenario | Mock setup | Expected |
+|---|----------|------------|----------|
+| 1 | Candidate not found | `candidate.findUnique` returns `null` | throws `'Candidate not found'` |
+| 2 | Application not found | `application.findFirst` returns `null` | throws `'Application not found for this candidate'` |
+| 3 | Application belongs to different candidate | `findFirst` returns `null` (where includes candidateId) | throws `'Application not found for this candidate'` |
+| 4 | InterviewStep not found | `interviewStep.findUnique` returns `null` | throws `'Invalid interview step'` |
+| 5 | Happy path | all mocks return valid data | returns `{ id, candidateId, currentInterviewStep }` |
+
+Use `await expect(fn()).rejects.toThrow('exact error message')` for error cases.
+
+---
+
+### Part 2 — Integration Tests (HTTP layer)
+
+**Service mock pattern** — mock the entire service module so no DB is hit:
+
+```typescript
+jest.mock('../../application/services/positionService');
+import * as positionService from '../../application/services/positionService';
+const mockGetCandidates = positionService.getPositionCandidates as jest.Mock;
+```
+
+Import `app` from `src/index.ts` and use supertest:
+```typescript
+import request from 'supertest';
+import { app } from '../../index';
+```
+
+---
+
+#### `src/__tests__/integration/positionRoutes.test.ts`
+
+**`GET /positions/:id/candidates`** — 4 cases:
+
+| # | Scenario | Service mock | Expected status | Expected body |
+|---|----------|--------------|-----------------|---------------|
+| 1 | Valid position with candidates | returns candidate array | 200 | array with correct shape |
+| 2 | Position exists, no candidates | returns `[]` | 200 | `[]` |
+| 3 | Position not found | returns `null` | 404 | `{ error: 'Position not found' }` |
+| 4 | Non-numeric ID | — (no service call) | 400 | `{ error: 'Invalid ID format' }` |
+
+**`GET /positions/:id/interviewSteps`** — 3 cases:
+
+| # | Scenario | Service mock | Expected status |
+|---|----------|--------------|-----------------|
+| 1 | Valid position | returns steps array | 200 |
+| 2 | Position not found | returns `null` | 404 |
+| 3 | Non-numeric ID | — | 400 |
+
+---
+
+#### `src/__tests__/integration/candidateRoutes.test.ts`
+
+**`PUT /candidates/:id/stage`** — 7 cases:
+
+| # | Scenario | Expected status | Expected body |
+|---|----------|-----------------|---------------|
+| 1 | Valid request | 200 | `{ id, candidateId, currentInterviewStep }` |
+| 2 | Non-numeric candidateId | 400 | `{ error: 'Invalid candidate ID format' }` |
+| 3 | Missing `applicationId` in body | 400 | `{ error: 'Invalid or missing applicationId' }` |
+| 4 | Missing `currentInterviewStep` in body | 400 | `{ error: 'Invalid or missing currentInterviewStep' }` |
+| 5 | Service throws `'Candidate not found'` | 404 | `{ error: 'Candidate not found' }` |
+| 6 | Service throws `'Application not found for this candidate'` | 404 | `{ error: 'Application not found for this candidate' }` |
+| 7 | Service throws `'Invalid interview step'` | 400 | `{ error: 'Invalid interview step' }` |
+
+---
+
+**Expected Output**:
+
+| File | Action |
+|------|--------|
+| `backend/package.json` | Edit — add `supertest` and `@types/supertest` to `devDependencies` |
+| `backend/src/__tests__/unit/positionService.test.ts` | Create — 9 unit tests |
+| `backend/src/__tests__/unit/candidateService.test.ts` | Create — 5 unit tests |
+| `backend/src/__tests__/integration/positionRoutes.test.ts` | Create — 7 integration tests |
+| `backend/src/__tests__/integration/candidateRoutes.test.ts` | Create — 7 integration tests |
+
+---
+
+**Constraints**:
+- No real DB connections — unit tests mock Prisma, integration tests mock services
+- Use `jest.clearAllMocks()` in `beforeEach` in every file
+- Error cases use `rejects.toThrow('exact string')` — match the exact error messages thrown by services
+- No `any` types in test files
+- Do not test implementation details — assert inputs and outputs only
+- `npm test` must pass with all tests green
+
+---
+
+**Acceptance Criteria**:
+- [ ] `npm test` exits 0 — all tests pass
+- [ ] 28 total tests across 4 files
+- [ ] Unit tests make zero real DB calls
+- [ ] Integration tests make zero real DB calls
+- [ ] Every error branch in each service function has a corresponding test
+- [ ] Every HTTP status code in the error-handling table (`docs/backend.md`) is covered by at least one test
+- [ ] No `any` in test files
