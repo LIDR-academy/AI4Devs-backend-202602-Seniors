@@ -1,0 +1,1 @@
+implement the all the task for user story stories/STORY-001-get-position-candidates.md described in @tasks/ taking into account all the documented frontend and backend project and following the best practices in this project

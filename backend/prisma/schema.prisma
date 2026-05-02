@@ -11,7 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://LTIdbUser:D1ymf8wyQEGthFR1E9xhCq@localhost:5432/LTIdb"
+  url      = env("DATABASE_URL")
 }
 
 model Candidate {
@@ -132,10 +132,13 @@ model Application {
   applicationDate      DateTime
   currentInterviewStep Int
   notes                String?
+  version              Int            @default(0)
+  updatedAt            DateTime       @updatedAt
   position             Position       @relation(fields: [positionId], references: [id])
   candidate            Candidate      @relation(fields: [candidateId], references: [id])
   interviewStep        InterviewStep  @relation(fields: [currentInterviewStep], references: [id])
   interviews           Interview[]
+  auditLogs            AuditLog[]
 }
 
 model Interview {
@@ -150,4 +153,20 @@ model Interview {
   application      Application    @relation(fields: [applicationId], references: [id])
   interviewStep    InterviewStep  @relation(fields: [interviewStepId], references: [id])
   employee         Employee       @relation(fields: [employeeId], references: [id])
+}
+
+model AuditLog {
+  id            Int         @id @default(autoincrement())
+  action        String      // e.g., 'STAGE_UPDATE'
+  userId        Int
+  applicationId Int
+  oldStageId    Int?        // nullable for first transition
+  newStageId    Int
+  timestamp     DateTime    @default(now())
+  details       Json?       // optional notes, reason for change
+
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+  @@index([timestamp])
 }

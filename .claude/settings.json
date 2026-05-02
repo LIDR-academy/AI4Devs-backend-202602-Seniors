@@ -1,0 +1,17 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true
+  }
+}
