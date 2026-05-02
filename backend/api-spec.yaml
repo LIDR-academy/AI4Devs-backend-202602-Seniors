@@ -185,4 +185,98 @@ paths:
           description: Invalid file type, only PDF and DOCX are allowed
         '500':
           description: Error during the file upload process
+  /positions/{id}/candidates:
+    get:
+      summary: Get candidates for a position
+      description: Retrieves all candidates applied to a specific position with their average interview scores.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Position ID
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: List of candidates for the position
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    candidateId:
+                      type: integer
+                      description: Unique identifier for the candidate
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+                    email:
+                      type: string
+                    applicationDate:
+                      type: string
+                      format: date-time
+                      description: Date when the candidate applied (ISO 8601 format)
+                    currentInterviewStep:
+                      type: integer
+                      nullable: true
+                      description: Current interview step ID
+                    averageScore:
+                      type: number
+                      nullable: true
+                      description: Average score from all interviews (null if no valid scores)
+        '400':
+          description: Bad request (invalid position ID)
+        '404':
+          description: Position not found
+        '500':
+          description: Internal server error
+  /candidates/{id}/stage:
+    put:
+      summary: Update candidate stage
+      description: Updates the interview stage for all applications of a candidate.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Candidate ID
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentInterviewStep
+              properties:
+                currentInterviewStep:
+                  type: integer
+                  minimum: 1
+                  description: New interview step ID
+      responses:
+        '200':
+          description: Candidate stage updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+                  updatedApplications:
+                    type: integer
+                    description: Number of applications updated
+        '400':
+          description: Bad request (invalid candidate ID, invalid interview step, or candidate has no applications)
+        '404':
+          description: Candidate or interview step not found
+        '500':
+          description: Internal server error
 

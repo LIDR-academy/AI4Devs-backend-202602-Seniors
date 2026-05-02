@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
-import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import {
+    addCandidate,
+    findCandidateById,
+    updateCandidateStage
+} from '../../application/services/candidateService';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -31,4 +35,55 @@ export const getCandidateById = async (req: Request, res: Response) => {
     }
 };
 
-export { addCandidate };
+export const updateCandidateStageController = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const candidateId = parseInt(id, 10);
+
+        if (isNaN(candidateId) || candidateId <= 0) {
+            res.status(400).json({ error: 'Invalid candidate ID format' });
+            return;
+        }
+
+        const { currentInterviewStep } = req.body;
+
+        if (
+            currentInterviewStep === undefined ||
+            currentInterviewStep === null ||
+            typeof currentInterviewStep !== 'number' ||
+            currentInterviewStep <= 0
+        ) {
+            res.status(400).json({
+                error: 'currentInterviewStep is required and must be a positive number'
+            });
+            return;
+        }
+
+        const result = await updateCandidateStage(candidateId, currentInterviewStep);
+
+        res.json({
+            message: result.message,
+            updatedApplications: result.updatedApplications
+        });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        if (
+            errorMessage === 'Candidate not found' ||
+            errorMessage === 'Interview step not found'
+        ) {
+            res.status(404).json({ error: errorMessage });
+            return;
+        }
+
+        if (errorMessage === 'Candidate has no applications') {
+            res.status(400).json({ error: errorMessage });
+            return;
+        }
+
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
