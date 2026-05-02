@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import { addCandidate, findCandidateById, updateCandidateStage as updateStageService } from '../../application/services/candidateService';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -28,6 +28,43 @@ export const getCandidateById = async (req: Request, res: Response) => {
         res.json(candidate);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+export const updateCandidateStage = async (req: Request, res: Response): Promise<void> => {
+    const candidateId = parseInt(req.params.id);
+    if (isNaN(candidateId)) {
+        res.status(400).json({ error: 'Invalid candidate ID format' });
+        return;
+    }
+
+    const { applicationId, currentInterviewStep } = req.body;
+    if (!applicationId || !Number.isInteger(applicationId)) {
+        res.status(400).json({ error: 'Invalid or missing applicationId' });
+        return;
+    }
+    if (!currentInterviewStep || !Number.isInteger(currentInterviewStep)) {
+        res.status(400).json({ error: 'Invalid or missing currentInterviewStep' });
+        return;
+    }
+
+    try {
+        const updated = await updateStageService(candidateId, applicationId, currentInterviewStep);
+        res.json(updated);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            if (error.message === 'Candidate not found') {
+                res.status(404).json({ error: error.message });
+            } else if (error.message === 'Application not found for this candidate') {
+                res.status(404).json({ error: error.message });
+            } else if (error.message === 'Invalid interview step') {
+                res.status(400).json({ error: error.message });
+            } else {
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
+        } else {
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
     }
 };
 

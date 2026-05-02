@@ -1,8 +1,11 @@
+import { PrismaClient } from '@prisma/client';
 import { Candidate } from '../../domain/models/Candidate';
 import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+
+const prisma = new PrismaClient();
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -62,4 +65,27 @@ export const findCandidateById = async (id: number): Promise<Candidate | null> =
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export const updateCandidateStage = async (
+    candidateId: number,
+    applicationId: number,
+    interviewStepId: number
+): Promise<{ id: number; candidateId: number; currentInterviewStep: number }> => {
+    const candidate = await prisma.candidate.findUnique({ where: { id: candidateId } });
+    if (!candidate) throw new Error('Candidate not found');
+
+    const application = await prisma.application.findFirst({
+        where: { id: applicationId, candidateId },
+    });
+    if (!application) throw new Error('Application not found for this candidate');
+
+    const step = await prisma.interviewStep.findUnique({ where: { id: interviewStepId } });
+    if (!step) throw new Error('Invalid interview step');
+
+    return prisma.application.update({
+        where: { id: applicationId },
+        data: { currentInterviewStep: interviewStepId },
+        select: { id: true, candidateId: true, currentInterviewStep: true },
+    });
 };
