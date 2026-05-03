@@ -1,8 +1,39 @@
 import { Candidate } from '../../domain/models/Candidate';
+import { PrismaClient } from '@prisma/client';
 import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+
+export class ValidationError extends Error {
+    code: string;
+
+    constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+        this.code = 'VALIDATION_ERROR';
+    }
+}
+
+export class NotFoundError extends Error {
+    code: string;
+
+    constructor(message: string) {
+        super(message);
+        this.name = 'NotFoundError';
+        this.code = 'NOT_FOUND';
+    }
+}
+
+export class ConflictError extends Error {
+    code: string;
+
+    constructor(message: string) {
+        super(message);
+        this.name = 'ConflictError';
+        this.code = 'CONFLICT';
+    }
+}
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -62,4 +93,86 @@ export const findCandidateById = async (id: number): Promise<Candidate | null> =
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export const updateCandidateStageForPosition = async (
+    prisma: PrismaClient,
+    candidateId: number,
+    positionId: number,
+    currentInterviewStep: number
+) => {
+    if (!Number.isInteger(candidateId) || candidateId <= 0) {
+        throw new ValidationError('Invalid candidate ID format');
+    }
+    if (!Number.isInteger(positionId) || positionId <= 0) {
+        throw new ValidationError('Invalid position ID format');
+    }
+    if (!Number.isInteger(currentInterviewStep) || currentInterviewStep <= 0) {
+        throw new ValidationError('Invalid currentInterviewStep format');
+    }
+
+    const [candidate, position, interviewStep] = await Promise.all([
+        prisma.candidate.findUnique({ where: { id: candidateId }, select: { id: true } }),
+        prisma.position.findUnique({ where: { id: positionId }, select: { id: true, interviewFlowId: true } }),
+        prisma.interviewStep.findUnique({ where: { id: currentInterviewStep }, select: { id: true, interviewFlowId: true } })
+    ]);
+
+    if (!candidate) {
+        throw new NotFoundError('Candidate not found');
+    }
+    if (!position) {
+        throw new NotFoundError('Position not found');
+    }
+    if (!interviewStep) {
+        throw new NotFoundError('InterviewStep not found');
+    }
+    if (interviewStep.interviewFlowId !== position.interviewFlowId) {
+        throw new ValidationError('InterviewStep does not belong to the Position interview flow');
+    }
+
+    const applications = await prisma.application.findMany({
+        where: {
+            candidateId,
+            positionId
+        },
+        select: {
+            id: true,
+            candidateId: true,
+            positionId: true,
+            currentInterviewStep: true
+        }
+    });
+
+    if (applications.length === 0) {
+        throw new NotFoundError('Application not found');
+    }
+
+    if (applications.length > 1) {
+        throw new ConflictError('Multiple applications found for this candidate and position');
+    }
+
+    const application = applications[0];
+    const previousInterviewStep = application.currentInterviewStep;
+
+    const updatedApplication = await prisma.application.update({
+        where: { id: application.id },
+        data: { currentInterviewStep },
+        select: {
+            id: true,
+            candidateId: true,
+            positionId: true,
+            currentInterviewStep: true
+        }
+    });
+
+    return {
+        message: 'Stage updated successfully',
+        data: {
+            applicationId: updatedApplication.id,
+            candidateId: updatedApplication.candidateId,
+            positionId: updatedApplication.positionId,
+            previousInterviewStep,
+            currentInterviewStep: updatedApplication.currentInterviewStep
+        }
+    };
 };
