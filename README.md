@@ -119,8 +119,8 @@ To generate the database using Prisma, follow these steps:
 
 ```
 npx prisma generate
-npx prisma migrate dev
-ts-node seed.ts
+npx prisma migrate deploy
+npm run seed
 ```
 
 Once you have completed all the steps, you should be able to save new candidates, both via web and via API, view them in the database, and retrieve them using GET by ID.
@@ -276,8 +276,8 @@ Para generar la base de datos utilizando Prisma, sigue estos pasos:
 3. Ejecuta los siguientes comandos para generar la estructura de prisma, las migraciones a tu base de datos y poblarla con datos de ejemplo:
 ```
 npx prisma generate
-npx prisma migrate dev
-ts-node seed.ts
+npx prisma migrate deploy
+npm run seed
 ```
 
 Una vez has dado todos los pasos, deberías poder guardar nuevos candidatos, tanto via web, como via API, verlos en la base de datos y obtenerlos mediante GET por id.
