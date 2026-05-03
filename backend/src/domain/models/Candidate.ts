@@ -25,8 +25,8 @@ export class Candidate {
         this.email = data.email;
         this.phone = data.phone;
         this.address = data.address;
-        this.education = data.education || [];
-        this.workExperience = data.workExperience || [];
+        this.education = data.educations ?? data.education ?? [];
+        this.workExperience = data.workExperiences ?? data.workExperience ?? [];
         this.resumes = data.resumes || [];
         this.applications = data.applications || [];
     }

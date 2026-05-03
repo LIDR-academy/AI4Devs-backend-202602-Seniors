@@ -1,4 +1,4 @@
-# Prompts User Log
+# Prompts log
 
 ## Prompt - 2026-05-03T01:30:58Z
 ### Agent: Agent
@@ -598,3 +598,37 @@ You are a **Senior Backend Engineer** with strong experience in TypeScript docum
 Context: CodeRabbit pre-merge includes Docstring Coverage; follow `.cursor/rules/20-project-standards.mdc`. Goal: add or improve useful docstrings only in backend source and test files that are **modified or added** per `git status` under `backend/src` and `backend/tests`. Do not document unmodified files or paths outside that candidate list; preserve behavior; prefer TSDoc; document tests where it helps; run backend `npm test` / `npm run build` / lint scripts if present. Deliver summary listing candidate files, files updated, doc types, validation results, intentionally ignored paths, and remaining gaps.
 
 Remember: scope is only git-derived modified/added files under `backend/src` and `backend/tests`, not the entire backend.
+
+---
+## Prompt - 2026-05-03T21:05:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+Verify each finding against the current code and only fix it if needed.
+
+In @.cursor/rules/20-project-standards.mdc at line 37, Update the "Testing
+expectations" section to remove the stale claim that "there are no `*.test.*`
+files" and "No examples exist yet" and instead reference the new backend/tests/
+directory as containing example tests and point maintainers to the repository's
+Jest configuration (jest.config.js) for the expected test structure; modify the
+prose in .cursor/rules/20-project-standards.mdc under the "Testing expectations"
+header to mention backend/tests/ and jest.config.js as the canonical examples.
+
+---
+## Prompt - 2026-05-03T21:12:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+Verify each finding against the current code and only fix it if needed.
+
+In `@backend/api-spec.yaml` around lines 155 - 215, The 200 response schema for
+GET /candidates/{id} is incomplete; update the response schema under the '200'
+response to include the full Candidate object fields returned by the handler:
+add educations (array of objects with institution, title, startDate, endDate),
+workExperiences (array of objects with company, position, description,
+startDate, endDate), resumes (array of objects with filePath, fileType), and
+applications (array of objects including nested position and interviews
+structures as returned by the handler). Ensure each new array item is documented
+with the correct property names and types (string/date as appropriate) so the
+schema for GET /candidates/{id} accurately reflects the handler's returned Candidate object.
+

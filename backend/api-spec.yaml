@@ -170,6 +170,7 @@ paths:
             application/json:
               schema:
                 type: object
+                description: Candidate row as serialized from the controller (domain model mirrors Prisma camelCase relation names via property names `education` and `workExperience`).
                 properties:
                   id:
                     type: integer
@@ -181,8 +182,119 @@ paths:
                     type: string
                   phone:
                     type: string
+                    nullable: true
                   address:
                     type: string
+                    nullable: true
+                  education:
+                    description: Matches Prisma `educations` relation; keyed `education` on the Candidate model instance returned by GET.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        institution:
+                          type: string
+                        title:
+                          type: string
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        candidateId:
+                          type: integer
+                  workExperience:
+                    description: Matches Prisma `workExperiences` relation; keyed `workExperience` on the Candidate model instance returned by GET.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        company:
+                          type: string
+                        position:
+                          type: string
+                        description:
+                          type: string
+                          nullable: true
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        candidateId:
+                          type: integer
+                  resumes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        candidateId:
+                          type: integer
+                        filePath:
+                          type: string
+                        fileType:
+                          type: string
+                        uploadDate:
+                          type: string
+                          format: date-time
+                  applications:
+                    type: array
+                    description: >-
+                      Included from Prisma with nested position (id, title) and interviews shaped by the finder query (interviewDate, notes, score, interviewStep.name only).
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        positionId:
+                          type: integer
+                        candidateId:
+                          type: integer
+                        applicationDate:
+                          type: string
+                          format: date-time
+                        currentInterviewStep:
+                          type: integer
+                        notes:
+                          type: string
+                          nullable: true
+                        position:
+                          type: object
+                          nullable: false
+                          properties:
+                            id:
+                              type: integer
+                            title:
+                              type: string
+                        interviews:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              interviewDate:
+                                type: string
+                                format: date-time
+                              notes:
+                                type: string
+                                nullable: true
+                              score:
+                                type: integer
+                                nullable: true
+                              interviewStep:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
         '400':
           description: Invalid ID format
           content:

@@ -71,7 +71,7 @@ Use this algorithm every time file tools are available:
 6. **Compute final timestamp:**
    - If no valid existing timestamps exist, use the candidate timestamp.
    - If candidate timestamp is greater than the maximum existing timestamp, use the candidate timestamp.
-   - Otherwise, use `maximum existing timestamp + 30 seconds`.
+   - Otherwise, use `maximum existing timestamp + 60 seconds`.
 7. **Append at EOF only:** append the separator when required, then append the new block.
 8. **Verify:** re-read the file and confirm:
    - the final `## Prompt - ...` block is the one just written;

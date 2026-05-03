@@ -34,7 +34,7 @@ Layering is described in README as domain / application / presentation / routes 
 
 **There is currently no separate `backend/src/infrastructure/` package** despite README; **do not add one** unless the team explicitly adopts that refactor. New persistence code should stay consistent with **Prisma usage inside domain model classes**.
 
-**Conflict (documented choice):** README lists `backend/src/tests/`; **there are no `*.test.*` files in the repo** today, though `jest.config.js` exists—when adding tests, mirror Jest/`ts-jest` config at [`backend/jest.config.js`](backend/jest.config.js).
+**Conflict (documented choice):** README lists `backend/src/tests/`; **automated backend tests live under [`backend/tests/`](backend/tests/)** (e.g. `services/*.test.ts`, `controllers/*.test.ts`, `integration/*.integration.test.ts`, `helpers/`). Jest is configured in [`backend/jest.config.js`](backend/jest.config.js) (**`ts-jest`**, **`testEnvironment: 'node'`**)—see **Testing expectations** below for canonical layout.
 
 ---
 
@@ -135,7 +135,7 @@ Prefer extending **`validator.ts`** with small dedicated functions mirroring **`
 
 ## Testing expectations
 
-- **Backend:** Jest **`ts-jest`**, **`testEnvironment: 'node'`**. **No examples exist yet** — when adding tests, colocate sensible files (e.g. `backend/tests` or `.test.ts` next to modules) consistent with **`npm test`** in [`backend/package.json`](backend/package.json).
+- **Backend:** **Canonical examples:** [`backend/tests/`](backend/tests/) — mirror existing **`*.test.ts`** layout (`services/`, `controllers/`, **`integration/`** for HTTP-level tests, shared **`helpers/`**). **Runner and structure expectations** are defined in [`backend/jest.config.js`](backend/jest.config.js) (**preset `ts-jest`**, **`testEnvironment: 'node'`**); run via **`npm test`** in [`backend/package.json`](backend/package.json). When README still references `backend/src/tests/`, treat **`backend/tests/`** plus **`jest.config.js`** as the source of truth.
 - **Frontend:** CRA test stack available; **`axios`** is imported in **`candidateService.js`** but **verify `axios` appears in frontend `dependencies`** when running or testing that path.
 
 ---
