@@ -3,6 +3,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
+import positionRoutes from './routes/positionRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
 
@@ -18,6 +19,7 @@ declare global {
 dotenv.config();
 const prisma = new PrismaClient();
 
+/** Configured Express application (exported for integration tests; listens on port 3010 outside `NODE_ENV=test`). */
 export const app = express();
 export default app;
 
@@ -39,6 +41,9 @@ app.use(cors({
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
 
+// Import and use positionRoutes
+app.use('/positions', positionRoutes);
+
 // Route for file uploads
 app.post('/upload', uploadFile);
 
@@ -59,6 +64,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).send('Something broke!');
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+  });
+}

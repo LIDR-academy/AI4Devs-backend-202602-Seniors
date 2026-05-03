@@ -152,6 +152,155 @@ paths:
           description: Bad request (invalid input data)
         '500':
           description: Internal server error
+  /candidates/{id}:
+    get:
+      summary: Get a candidate by ID
+      description: Retrieves a single candidate record by their numeric primary key.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the candidate
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Candidate found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                  address:
+                    type: string
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid ID format
+        '404':
+          description: Candidate not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Candidate not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
+  /positions/{id}/candidates:
+    get:
+      summary: Get candidates in process for a position
+      description: >
+        Returns every application currently in process for the given position.
+        For each application the response includes the candidate's name,
+        their current interview step, and the average score across all
+        interviews recorded for that application (null when no scored
+        interviews exist).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the Position
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: >
+            Position found. Returns the positionId and a (possibly empty)
+            list of candidate entries — one per Application row.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  positionId:
+                    type: integer
+                    description: The position primary key echoed from the path parameter
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        applicationId:
+                          type: integer
+                          description: Primary key of the Application row
+                        candidateId:
+                          type: integer
+                          description: Primary key of the Candidate
+                        firstName:
+                          type: string
+                          description: Candidate first name
+                        lastName:
+                          type: string
+                          description: Candidate last name
+                        fullName:
+                          type: string
+                          description: Convenience concatenation of firstName and lastName
+                        currentInterviewStep:
+                          type: integer
+                          description: FK to InterviewStep.id representing the applicant's current pipeline step
+                        averageInterviewScore:
+                          type: number
+                          nullable: true
+                          description: >
+                            Arithmetic mean of non-null Interview.score values for this
+                            application. null when no interviews exist or all scores are null.
+        '400':
+          description: Invalid ID format (non-numeric path parameter)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid ID format
+        '404':
+          description: Position not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Position not found
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
   /upload:
     post:
       summary: Upload a file

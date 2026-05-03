@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+/** Domain model for a job opening; persists via Prisma `position` table. */
 export class Position {
     id?: number;
     companyId: number;
@@ -76,6 +77,12 @@ export class Position {
         }
     }
 
+    /**
+     * Loads a single position by primary key.
+     *
+     * @param id - Position id (`findUnique` where clause).
+     * @returns Hydrated `Position` or `null` when no row exists.
+     */
     static async findOne(id: number): Promise<Position | null> {
         const data = await prisma.position.findUnique({
             where: { id: id },
