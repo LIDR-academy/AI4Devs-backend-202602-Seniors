@@ -459,3 +459,142 @@ The documentation must make the code easier to understand while staying concise 
 ## Output Style
 
 When finished, provide a concise summary with: files updated, types of docstrings, validation results, remaining gaps.
+
+---
+## Prompt - 2026-05-03T05:15:00Z
+### Agent: Agent
+#### Model: Claude 4.7 Opus
+
+You are a **Backend API Design Expert**.
+
+You specialize in spec-driven development, REST API design, backend implementation planning, database-driven APIs, and maintainable backend systems.
+
+Your responsibility is to create a precise implementation plan for a specialized backend agent.
+You must **not** implement the endpoint.
+
+## Context
+
+This is an existing project with separate folders:
+
+```txt
+frontend/
+backend/
+```
+
+You must work only inside:
+
+```txt
+backend/
+```
+
+The frontend is completely out of scope.
+
+The project already has backend conventions, architecture decisions, naming patterns, endpoint structure, data access rules, validation patterns, error handling, testing strategy, and documentation style defined in:
+
+```txt
+.cursor/rules/20-project-standards.mdc
+```
+
+Use that rule as the primary source of truth.
+
+The new endpoint to plan is:
+
+```http
+PUT /candidates/:id/stage
+```
+
+## Endpoint Intent
+
+This endpoint updates the interview process stage for a moved candidate.
+
+It should allow the backend to modify the current phase of the interview process in which a specific candidate is located.
+
+Important: before defining the final contract, inspect the backend data model and existing relationships.
+If the interview stage is stored on an application/process entity instead of directly on the candidate, the plan must explicitly describe how the endpoint should identify the correct application or process to update.
+
+## Desired Outcome
+
+Create a **spec-driven implementation plan** for `PUT /candidates/:id/stage` saved inside the backend documentation/specification structure used by the repository (preferred existing folder; fallback `backend/docs/specs/put-candidates-stage.md`).
+
+(Additional scope/instructions: inspect backend framework, existing candidate/update endpoints, validation style, error response style, service layering, ORM patterns, candidate/application/interview models; define safe API contract addressing `:id` ambiguity; describe files to create/modify with patterns to follow; cover validation, error handling, DB update strategy, transactions, tests by layer, OpenAPI doc updates; testing scenarios for success, invalid id, not found, invalid stage, multiple applications, DB failure, auth; output structure with sections 1–10 as defined in the prompt; do not implement code, only the plan.)
+
+## Output Style
+
+The plan must be written in English, specific to this repository, concise but complete, actionable for a backend implementation agent, grounded in verified backend code and schema, free of generic architecture advice.
+
+After creating the file, return a concise chat summary with: path of the created plan file, backend conventions discovered, recommended implementation approach, blocking assumptions or risks if any.
+
+---
+## Prompt - 2026-05-03T05:34:00Z
+### Agent: backend-api-implementer
+#### Model: Claude 4.7 Opus
+
+@.cursor/agents/backend-api-implementer.md
+
+Implement the endpoint described in this approved plan:
+
+backend/docs/specs/put-candidates-stage.md
+
+Constraints:
+- Stay strictly inside backend/.
+- Follow .cursor/rules/20-project-standards.mdc.
+- No new npm dependencies, no schema migrations, no auth middleware.
+- Update backend/api-spec.yaml with the new contract in the same YAML style used for /candidates.
+- Run `npm run build` and `npm test` from backend/ and report results.
+
+Return the report in the format defined in the agent's "Output Style" section.
+
+---
+## Prompt - 2026-05-03T05:36:00Z
+### Agent: backend-api-implementer
+#### Model: Claude 4.7 Opus
+
+Implement the endpoint described in this approved spec-driven plan:
+
+**Plan path:** `backend/docs/specs/put-candidates-stage.md`
+
+You MUST read that plan first; it is the binding contract for this implementation. Sections 3, 4, 5, 6, and 7 of the plan are normative; sections 1, 2, 8, 9, and 10 are supporting context.
+
+(Endpoint summary: `PUT /candidates/:id/stage`; `:id` = `Candidate.id`; body `{ applicationId, currentInterviewStep }` both required positive integers; 200 returns updated `Application` row; validation order parse `:id` (400) → load Candidate (404) → load Application + position.interviewFlowId (404) → enforce `application.candidateId === :id` (409, fallback 400) → load InterviewStep (404) → enforce step↔flow consistency (400) → `prisma.application.update` catching `P2025` to remap to 404. Error JSON `{ error }` matching `getCandidateById`. JSON 500 from controller.)
+
+(Constraints: stay inside `backend/`; do NOT modify `frontend/` or `.cursor/`; follow `.cursor/rules/20-project-standards.mdc`; no new npm deps; no schema migrations; no auth middleware; reuse existing layered structure and test layout under `backend/tests/{services,controllers,integration,helpers}`; keep `/candidates` mount untouched; update `backend/api-spec.yaml` mirroring the `/positions/{id}/candidates` block.)
+
+(Files to create: `backend/src/application/services/candidateStageService.ts`; `backend/tests/services/candidateStageService.test.ts`; `backend/tests/controllers/candidateController.test.ts`; `backend/tests/integration/candidateRoutes.integration.test.ts`. Files to modify: `backend/src/routes/candidateRoutes.ts`; `backend/src/presentation/controllers/candidateController.ts`; `backend/src/application/validator.ts`; `backend/tests/helpers/factories.ts`; `backend/api-spec.yaml`. Optional: `backend/src/domain/models/Application.ts`. Do NOT touch `backend/src/index.ts`.)
+
+(Testing scenarios per layer per plan §7: service rows 1, 2, 6, 12, 13, 14, 15, 16, 21; controller rows 3, 4, 5, 7, 8, 9, 10, 11 + full-equality 200 + 500 mapping; integration rows 1, 3, 6, 12, 14, 15, 17, 18, 19, 20. Use `jest.mock('@prisma/client')` factory + `jest.requireMock` pattern from `tests/services/positionCandidateService.test.ts`.)
+
+Validation: from `backend/` run `npm run build` (must succeed), `npm test` (all suites green incl. existing position* tests), optional `npx eslint`.
+
+Return the final report in the exact format defined under "Output Style" in `.cursor/agents/backend-api-implementer.md` (Summary / Plan Used / Endpoint Shape / Files Changed / API Contract / Tests / Validation / Notes), mentioning whether 409 or 400 was used for the candidate↔application mismatch case.
+
+---
+## Prompt - 2026-05-03T06:50:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+Conduct a Senior Backend Test Engineer audit of PUT /candidates/:id/stage per backend/docs/specs/put-candidates-stage.md and git-derived scope; inspect backend-only tests and implementation; produce backend/docs/QA-put-candidates-stage.md using the mandated Markdown sections (Executive Summary through Final Recommendation); audit only (no prod refactors unless testability blocker); frontend out of scope.
+
+---
+## Prompt - 2026-05-03T07:20:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+Please rename backend/docs/test-audit.md to QA-get-position-candidates.md to align the names of the files that store the results of the test audits.
+
+---
+## Prompt - 2026-05-03T18:12:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+Senior Backend Test Engineer brief: implement recommended test plan from `backend/docs/QA-put-candidates-stage.md`; run tests/build; update audit with scores (Previous / Last) and post-implementation sections. Constraints: backend/ only, no prod behavior change.
+
+---
+## Prompt - 2026-05-03T20:15:00Z
+### Agent: Agent
+#### Model: Composer 2
+
+You are a **Senior Backend Engineer** with strong experience in TypeScript documentation, maintainability, test readability, and pre-merge quality checks.
+
+Context: CodeRabbit pre-merge includes Docstring Coverage; follow `.cursor/rules/20-project-standards.mdc`. Goal: add or improve useful docstrings only in backend source and test files that are **modified or added** per `git status` under `backend/src` and `backend/tests`. Do not document unmodified files or paths outside that candidate list; preserve behavior; prefer TSDoc; document tests where it helps; run backend `npm test` / `npm run build` / lint scripts if present. Deliver summary listing candidate files, files updated, doc types, validation results, intentionally ignored paths, and remaining gaps.
+
+Remember: scope is only git-derived modified/added files under `backend/src` and `backend/tests`, not the entire backend.

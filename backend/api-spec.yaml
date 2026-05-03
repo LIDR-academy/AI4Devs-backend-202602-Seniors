@@ -301,6 +301,120 @@ paths:
                   error:
                     type: string
                     example: Internal Server Error
+  /candidates/{id}/stage:
+    put:
+      summary: Update the current interview step of a candidate's application
+      description: >
+        Moves a candidate forward (or backward) in their pipeline by updating
+        `Application.currentInterviewStep`. The "stage" lives on the
+        `Application` row, not on `Candidate`, so the request body must carry
+        `applicationId` to disambiguate which application of the candidate to
+        update. The new step must reference an existing `InterviewStep` that
+        belongs to the same `InterviewFlow` as the application's position.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the Candidate
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationId
+                - currentInterviewStep
+              properties:
+                applicationId:
+                  type: integer
+                  minimum: 1
+                  description: >
+                    Primary key of the Application row to mutate. Must belong
+                    to the candidate identified by the path parameter.
+                currentInterviewStep:
+                  type: integer
+                  minimum: 1
+                  description: >
+                    New `InterviewStep.id` value. Must reference an existing
+                    `InterviewStep` whose `interviewFlowId` matches the
+                    application's position interview flow.
+      responses:
+        '200':
+          description: Stage updated. Returns the persisted Application row.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Primary key of the Application row
+                  positionId:
+                    type: integer
+                    description: FK to Position.id
+                  candidateId:
+                    type: integer
+                    description: FK to Candidate.id
+                  applicationDate:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 date the application was created
+                  currentInterviewStep:
+                    type: integer
+                    description: FK to InterviewStep.id (new value just persisted)
+                  notes:
+                    type: string
+                    nullable: true
+                    description: Free-form notes on the application
+        '400':
+          description: >
+            Invalid request — non-numeric path id, missing/invalid body
+            fields, or step does not belong to the candidate's interview flow.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid applicationId
+        '404':
+          description: >
+            Candidate, Application, or InterviewStep referenced by the request
+            could not be found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Candidate not found
+        '409':
+          description: >
+            The targeted Application row exists but belongs to a different
+            candidate than the one in the path parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Application does not belong to candidate
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
   /upload:
     post:
       summary: Upload a file
