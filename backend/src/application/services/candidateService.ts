@@ -3,6 +3,10 @@ import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+import { PrismaClient } from '@prisma/client';
+import { NotFoundError, ValidationError } from '../errors';
+
+const prisma = new PrismaClient();
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -62,4 +66,43 @@ export const findCandidateById = async (id: number): Promise<Candidate | null> =
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export interface UpdateStageResult {
+  applicationId: number;
+  currentInterviewStep: number;
+}
+
+export const updateCandidateStage = async (
+  candidateId: number,
+  applicationId: number,
+  currentInterviewStep: number
+): Promise<UpdateStageResult> => {
+  const [application, step] = await Promise.all([
+    prisma.application.findFirst({
+      where: { id: applicationId, candidateId },
+      include: { position: { select: { interviewFlowId: true } } },
+    }),
+    prisma.interviewStep.findUnique({
+      where: { id: currentInterviewStep },
+      select: { interviewFlowId: true },
+    }),
+  ]);
+
+  if (!application) {
+    throw new NotFoundError('Application not found for this candidate');
+  }
+  if (!step) {
+    throw new NotFoundError('InterviewStep not found');
+  }
+  if (step.interviewFlowId !== application.position.interviewFlowId) {
+    throw new ValidationError('InterviewStep does not belong to the InterviewFlow of this position');
+  }
+
+  const updated = await prisma.application.update({
+    where: { id: applicationId },
+    data: { currentInterviewStep },
+  });
+
+  return { applicationId: updated.id, currentInterviewStep: updated.currentInterviewStep };
 };
