@@ -70,6 +70,10 @@ export const updateCandidateStage = async (req: Request, res: Response) => {
         );
         return res.status(200).json(result);
     } catch (error) {
+        console.error('🔥 ERROR updateCandidateStage:', error);
+        if (error instanceof Error && error.stack) {
+            console.error(error.stack);
+        }
         if (error instanceof ValidationError) {
             return res.status(400).json({ error: error.message });
         }
