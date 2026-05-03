@@ -1,0 +1,192 @@
+---
+description: LTI talent-tracking codebase conventions—Express/Prisma backend, CRA React frontend—for AI-assisted changes aligned with existing patterns.
+alwaysApply: false
+---
+
+# Project standards (LTI — Talent Tracking System)
+
+Use this rule when modifying `backend/` or `frontend/`. Prefer **matching existing files** over introducing new frameworks, folders, or abstractions unless the repository owner explicitly approves a structural change.
+
+## Project overview
+
+- **Product:** Full-stack “LTI” talent tracking: candidates with education, work experience, CV uploads, applications, interviews (schema supports broader recruiting domain beyond the APIs currently wired).
+- **Backend:** Node.js **Express** in **TypeScript** (`backend/`), compiled with `tsc` to `dist/`. Entrypoint: [`backend/src/index.ts`](backend/src/index.ts). Default HTTP port **3010**.
+- **Database:** **PostgreSQL** via **Docker Compose** (`docker-compose.yml`). **Prisma ORM:** schema in [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma), migrations under `backend/prisma/migrations/`.
+- **Frontend:** **Create React App** (`frontend/`), **React 18**. Mix of `.js` and `.ts`; Bootstrap/React-Bootstrap UI. Dev server defaults to port **3000**.
+- **Monorepo root:** Thin [`package.json`](package.json) (e.g. `dotenv`; Prisma `schema` path). Install and run tooling from `backend/` and `frontend/` respectively.
+
+Related workspace rules:
+
+- **`10-prompt-tracking.mdc`** — prompts must be logged to `prompts/prompts-ICS.md` per workspace policy.
+
+---
+
+## Architecture principles (as implemented today)
+
+Layering is described in README as domain / application / presentation / routes (+ infrastructure). **Actual code differs slightly from README:**
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| **Routes** | `backend/src/routes/` | `express.Router()`, mount verbs/paths; some handlers inline, some delegated to controllers. |
+| **Presentation** | `backend/src/presentation/controllers/` | Express `Request`/`Response` handlers; parse params, HTTP status mapping. |
+| **Application** | `backend/src/application/` | **`services/`** orchestration; **`validator.ts`** input validation helpers. |
+| **Domain** | `backend/src/domain/models/` | **Classes** encapsulating persistence: `constructor(data: any)`, `save()`, **`static`** finders—**calling Prisma directly** inside models. |
+
+**There is currently no separate `backend/src/infrastructure/` package** despite README; **do not add one** unless the team explicitly adopts that refactor. New persistence code should stay consistent with **Prisma usage inside domain model classes**.
+
+**Conflict (documented choice):** README lists `backend/src/tests/`; **there are no `*.test.*` files in the repo** today, though `jest.config.js` exists—when adding tests, mirror Jest/`ts-jest` config at [`backend/jest.config.js`](backend/jest.config.js).
+
+---
+
+## Folder and file organization
+
+**Backend**
+
+- [`backend/src/index.ts`](backend/src/index.ts) — `express()` app wiring: JSON body parser, attaches **`PrismaClient` on `req.prisma`** (extended `Express.Request`), CORS (`http://localhost:3000`), route mounts, trivial request logging middleware, global error handler, `listen(3010)`.
+- **`routes/`** — one file per resource area (currently `candidateRoutes.ts`). **`presentation/controllers/`** — `*Controller.ts`. **`application/services/`** — `*Service.ts`. **`domain/models/`** — one file per Prisma-aligned entity (`Candidate.ts`, `Education.ts`, …).
+- **`backend/prisma/`** — schema, migrations, [`seed.ts`](backend/prisma/seed.ts).
+
+**Frontend**
+
+- `frontend/src/services/` — API helpers (e.g. [`candidateService.js`](frontend/src/services/candidateService.js)).
+- `frontend/src/components/` — UI components (`*.js`).
+
+**Documentation / API**
+
+- [`backend/api-spec.yaml`](backend/api-spec.yaml) — OpenAPI-style description for candidates and `/upload`; **preferred source when extending HTTP contracts** alongside route code.
+
+---
+
+## API endpoint implementation standards
+
+Before implementing anything new:
+
+1. Read **`backend/api-spec.yaml`** and **`backend/src/index.ts`** to see existing paths and prefixes.
+2. Read the closest analogous flow end-to-end: **route → (controller) → service → validator (if needed) → domain model(s)** — use **`backend/src/routes/candidateRoutes.ts`**, **`backend/src/presentation/controllers/candidateController.ts`**, **`backend/src/application/services/candidateService.ts`**, and **`backend/src/domain/models/Candidate.ts`** as templates.
+3. Wire new routers in **`index.ts`** with `app.use('/...', ...)`.
+4. Keep **backward compatibility** for existing callers (frontend uses hardcoded `http://localhost:3010` URLs).
+
+**Current patterns:**
+
+- **`POST /candidates`** — implemented in **`candidateRoutes.ts`** with inline `async` handler calling service-layer `addCandidate` imported from **`candidateController`** (which **re-exports** the service function); returns **201** and body from Prisma **`create`** on success; validation errors surfaced as **`400`** with `{ message }`.
+- **`GET /candidates/:id`** — handler **`getCandidateById`** in **`candidateController`**; parses numeric `id`, **400** invalid, **404** not found, **200** JSON payload.
+- **`POST /upload`** — mounted directly in **`index.ts`**, Multer disk storage in **`fileUploadService.ts`**.
+
+**Note:** **`addCandidateController`** exists in **`candidateController.ts`** but **`POST /candidates` does not use it** — **avoid duplicating inconsistent controller wrappers** when adding endpoints; extend one clear pattern after comparing call sites (`routes/` vs `controllers/`).
+
+---
+
+## Naming conventions
+
+- TypeScript filenames: **`camelCase.ts`** (`candidateRoutes.ts`, `candidateService.ts`, `candidateController.ts`).
+- Domain entities: **`PascalCase`** class names matching Prisma models (`Candidate`, `Education`).
+- Route path segments: lowercase, plural nouns (`/candidates`).
+- Exported handlers: **`getXyz`**, **`addXyz`**, **`findXyzById`** as in existing modules.
+
+Formatting: ESLint extends **`plugin:prettier/recommended`** ([`.eslintrc.js`](backend/.eslintrc.js)); Prettier **`singleQuote: true`**, **`trailingComma: 'all'`** ([`.prettierrc`](backend/.prettierrc)).
+
+Comments in codebase mix **Spanish and English** — follow the **dominant language of the file** you edit; do not mass-translate unrelated comments.
+
+---
+
+## DTO / request / response conventions
+
+- There are **no shared TypeScript DTO/interfaces** validated at compile time; payloads are largely **`any`** at boundaries with runtime checks in **`application/validator.ts`**.
+- **JSON field names:** **`camelCase`** (`firstName`, `workExperiences`, etc.), aligned with Prisma/React usage.
+- **Dates:** Incoming strings validated with **`YYYY-MM-DD`** regex in validator; constructors use **`new Date(...)`** before Prisma persistence.
+- **Nested collections:** Passed as arrays on POST body (`educations`, `workExperiences`); nested `cv` object optional with `filePath` / `fileType` when provided.
+
+Prefer extending **`validator.ts`** with small dedicated functions mirroring **`validate*` / **`validateThing`** helpers rather than adding a second validation stack (e.g. Zod/joi) without approval.
+
+---
+
+## Validation rules
+
+- Central entry: **`validateCandidateData`** in [`backend/src/application/validator.ts`](backend/src/application/validator.ts); throws **`Error`** with short English messages (**`Invalid …`**).
+- **Phone:** regex expects Spanish-style mobile prefixes **`6|7|9`** + **8 digits** (9 digits total after first).
+- Candidate `id` in body short-circuits validation (supports **update** path in validator comment); align any new PATCH/PUT semantics with schema and `Candidate.save()` branching on `this.id`.
+
+---
+
+## Error handling rules
+
+- **Route layer:** `try/catch` with **`instanceof Error`** → often **400** + `{ message: error.message }` for predictable validation/business failures; fallback **500** with generic `{ message }` where used today.
+- **Controller `getCandidateById`:** **400** invalid id, **404** missing, **500** `{ error }` string.
+- **Global Express error handler:** logs **`err.stack`**, responds **500** plain text **`Something broke!`** — **responses are inconsistent** (sometimes JSON `{ message | error }`, sometimes text). When adding endpoints, **match the nearest existing sibling route’s response shape**; do not introduce a third pattern without explicit agreement.
+- **Prisma `P2002`:** handled in **`candidateService`** for unique email with user-facing message **`The email already exists in the database`**.
+
+---
+
+## Authentication and authorization
+
+- **No auth middleware, JWT, or session layer** is present. **All routes are anonymous** unless you add security with explicit stakeholder sign-off.
+- CORS restricts browser origin to **`http://localhost:3000`** (credentials **true**) — coordinate any new origins with deployment reality.
+
+---
+
+## Database access rules
+
+- **Prefer Prisma** through **domain model** methods (**`save`**, **`static find*`**) consistent with **`Candidate`** / **`Education`** / **`WorkExperience`** / **`Resume`**.
+- **`PrismaClient`:** Global instance in **`index.ts`** injected as **`req.prisma`** — **currently underused**; domain classes often **`new PrismaClient()`** privately. Avoid adding even more disparate client lifecycles unnecessarily; prefer **reuse patterns already in the file you extend**.
+- **`schema.prisma` datasource:** may contain credentials in-repo locally; **`docker-compose`** uses **`DB_*` env vars**. Treat DB URLs/secrets per environment; align with **`dotenv`** in **`index.ts`** and never commit fresh secrets — follow standard hygiene (env files ignored, placeholders in docs).
+- Schema includes **Employee, Application, Interview, Position, InterviewFlow**, etc. Implementing endpoints for those should **follow the same entity-class pattern** once an existing **`domain/models`** file exists (`Application.ts`, `Interview.ts`, …).
+
+---
+
+## Testing expectations
+
+- **Backend:** Jest **`ts-jest`**, **`testEnvironment: 'node'`**. **No examples exist yet** — when adding tests, colocate sensible files (e.g. `backend/tests` or `.test.ts` next to modules) consistent with **`npm test`** in [`backend/package.json`](backend/package.json).
+- **Frontend:** CRA test stack available; **`axios`** is imported in **`candidateService.js`** but **verify `axios` appears in frontend `dependencies`** when running or testing that path.
+
+---
+
+## Documentation expectations
+
+- Update **[`backend/api-spec.yaml`](backend/api-spec.yaml)** when changing request/response contracts for documented paths.
+- **README:** bilingual (**EN / ES**) — when adding endpoints, consider documenting sample URLs alongside existing **`localhost:3010`** examples.
+- **`swagger-jsdoc`** / **`swagger-ui-express`** are **dependencies only** — **no runtime Swagger mount** observed in **`index.ts`**. Prefer **`api-spec.yaml`** unless intentionally wiring Swagger with approval.
+
+---
+
+## Security considerations
+
+- **File uploads:** Multer **PDF/DOCX** whitelist, **10MB** limit; destination **`../uploads/`** relative to runtime — audit path traversal/host exposure before production use.
+- **Input validation:** Do not bypass **`validator`** for fields it already validates; extend it for new user-controlled fields.
+- **Secrets:** Prefer **`DATABASE_URL` / compose env`** over hard-coded credentials in **`schema.prisma`** for new environments (schema currently embeds localhost URL).
+
+---
+
+## Observability / logging
+
+- Minimal **`console.log`**/`console.error` middleware and error logging in **`index.ts`** and **`candidateService`**.
+- No structured logger, traces, or metrics libs — retain **similar `console`-level** feedback unless Observability uplift is scoped separately.
+
+---
+
+## Frontend integration
+
+- API base **`http://localhost:3010`** is **hardcoded** in [`candidateService.js`](frontend/src/services/candidateService.js) — new endpoints consumed by FE should mirror this until a **`REACT_APP_*` base URL** pattern is introduced with approval.
+
+---
+
+## Working with the two new endpoints
+
+The repository **does not name the two forthcoming endpoints**. Before implementation:
+
+1. Confirm **exact paths**, methods, payloads, permissions, and idempotency with the product/request owner or ticket.
+2. Find the **nearest existing domain aggregate** (`Candidate`-style workflow vs **`Position`**/ **`Application`**, etc.) and replicate file placement.
+3. Add Prisma-backed behavior through **existing domain models** if they expose **`save`/`find*`** — otherwise extend those classes first instead of standalone Prisma scripts in middleware.
+4. Update **`backend/api-spec.yaml`** and **README examples** accordingly.
+5. If both endpoints belong to one resource area, extend or add **one router file** and **mount once** under **`index.ts`**.
+
+Until requirements are finalized, AI agents may propose **minimal DTO drafts** inferred from **`schema.prisma`** and **`api-spec.yaml`** and must **label inferred fields as assumptions** in conversation or proposals.
+
+---
+
+## Mandatory workflow before creating new files
+
+1. **`grep`/search** related resources (e.g. `Position`, `Application`) across `backend/src`.
+2. Open and follow **`candidate*`** (**routes → controller → service → validator → model**) as canonical flow.
+3. **Reuse** validators, helpers, Multer/upload patterns instead of cloning similar logic elsewhere.
+4. **Do not** add global DI containers, CQRS buses, repositories, GraphQL servers, NestJS adapters, etc., **unless explicitly requested**.
+5. **Do not rename/move** unrelated domain models or refactor duplicate PrismaClients as part of unrelated endpoint work unless approved.
