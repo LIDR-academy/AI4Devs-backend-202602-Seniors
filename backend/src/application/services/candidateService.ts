@@ -1,8 +1,10 @@
 import { Candidate } from '../../domain/models/Candidate';
-import { validateCandidateData } from '../validator';
+import { validateCandidateData, validateStageUpdateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+import { Application } from '../../domain/models/Application';
+import { InterviewStep } from '../../domain/models/InterviewStep';
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -62,4 +64,22 @@ export const findCandidateById = async (id: number): Promise<Candidate | null> =
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export const updateCandidateStage = async (candidateId: number, applicationId: number, interviewStepId: number) => {
+    validateStageUpdateData({ applicationId, currentInterviewStep: interviewStepId });
+
+    const application = await Application.findByIdAndCandidateId(applicationId, candidateId);
+    if (!application) throw new Error('Application not found');
+
+    const step = await InterviewStep.findOne(interviewStepId);
+    if (!step) throw new Error('Interview step not found');
+
+    if (step.interviewFlowId !== application.position.interviewFlowId) {
+        throw new Error('Interview step does not belong to the position\'s interview flow');
+    }
+
+    const updatedApplication = new Application(application);
+    updatedApplication.currentInterviewStep = interviewStepId;
+    return await updatedApplication.save();
 };

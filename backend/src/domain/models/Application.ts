@@ -50,4 +50,24 @@ export class Application {
         if (!data) return null;
         return new Application(data);
     }
+
+    static async findByIdAndCandidateId(applicationId: number, candidateId: number) {
+        return await prisma.application.findFirst({
+            where: { id: applicationId, candidateId },
+            include: {
+                position: { select: { interviewFlowId: true } },
+            },
+        });
+    }
+
+    static async findByPositionId(positionId: number) {
+        return await prisma.application.findMany({
+            where: { positionId },
+            include: {
+                candidate: true,
+                interviewStep: true,
+                interviews: true,
+            },
+        });
+    }
 }
