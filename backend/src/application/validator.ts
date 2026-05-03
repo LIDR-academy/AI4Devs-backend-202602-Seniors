@@ -77,6 +77,15 @@ const validateCV = (cv: any) => {
     }
 };
 
+export const validateStageUpdateData = (data: any) => {
+    if (!data.applicationId || !Number.isInteger(data.applicationId) || data.applicationId <= 0) {
+        throw new Error('Invalid applicationId');
+    }
+    if (!data.currentInterviewStep || !Number.isInteger(data.currentInterviewStep) || data.currentInterviewStep <= 0) {
+        throw new Error('Invalid currentInterviewStep');
+    }
+};
+
 export const validateCandidateData = (data: any) => {
     if (data.id) {
         // If id is provided, we are editing an existing candidate, so fields are not mandatory
