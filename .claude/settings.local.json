@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose up *)",
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "Bash(npm install *)",
+      "Bash(ping -n 6 127.0.0.1)",
+      "Bash(Start-Sleep -Seconds 6)",
+      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(docker exec ai4devs-backend-202602-seniors-db-1 bash -c \"psql -U LTIdbUser -d LTIdb -c 'SELECT tablename FROM pg_tables WHERE schemaname=''public'' ORDER BY tablename;'\")",
+      "PowerShell(docker exec ai4devs-backend-202602-seniors-db-1 bash -c 'psql -U LTIdbUser -d LTIdb -c \"SELECT tablename FROM pg_tables WHERE schemaname='\"'\"'public'\"'\"' ORDER BY tablename;\"')",
+      "Bash(Get-ChildItem -Path \"c:\\\\IA\\\\AI4Devs\\\\Modulo9\\\\AI4Devs-backend-202602-Seniors\\\\backend\\\\src\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\IA\\\\AI4Devs\\\\Modulo9\\\\AI4Devs-backend-202602-Seniors\\\\backend\\\\src\\\\domain\\\\models\" | ForEach-Object { $_.Name })",
+      "Bash(npx tsc *)",
+      "Bash(npx jest *)",
+      "Bash(Select-Object Name)",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\IA\\\\AI4Devs\\\\Modulo9\\\\AI4Devs-backend-202602-Seniors\\\\prompts\")"
+    ]
+  }
+}

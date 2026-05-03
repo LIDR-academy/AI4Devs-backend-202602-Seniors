@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { addCandidate, findCandidateById } from '../../application/services/candidateService';
+import { addCandidate, findCandidateById, updateCandidateStage as updateStageService } from '../../application/services/candidateService';
+import { NotFoundError, ValidationError } from '../../application/errors';
 
 export const addCandidateController = async (req: Request, res: Response) => {
     try {
@@ -32,3 +33,28 @@ export const getCandidateById = async (req: Request, res: Response) => {
 };
 
 export { addCandidate };
+
+export const updateCandidateStage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const candidateId = parseInt(req.params.id);
+    if (isNaN(candidateId)) {
+      res.status(400).json({ error: 'Invalid ID format' });
+      return;
+    }
+    const { applicationId, currentInterviewStep } = req.body;
+    if (applicationId === undefined || currentInterviewStep === undefined) {
+      res.status(400).json({ error: 'applicationId and currentInterviewStep are required' });
+      return;
+    }
+    const result = await updateStageService(candidateId, applicationId, currentInterviewStep);
+    res.status(200).json({ message: 'Candidate stage updated successfully', data: result });
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      res.status(404).json({ error: error.message });
+    } else if (error instanceof ValidationError) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+};
