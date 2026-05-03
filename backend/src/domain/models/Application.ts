@@ -1,7 +1,18 @@
 import { PrismaClient } from '@prisma/client';
-import { Interview } from './Interview';
 
 const prisma = new PrismaClient();
+
+export interface ApplicationWithDetails {
+    id: number;
+    positionId: number;
+    candidateId: number;
+    applicationDate: Date;
+    currentInterviewStep: number;
+    notes: string | null;
+    candidate: { firstName: string; lastName: string };
+    interviewStep: { name: string };
+    interviews: { score: number | null }[];
+}
 
 export class Application {
     id?: number;
@@ -10,7 +21,6 @@ export class Application {
     applicationDate: Date;
     currentInterviewStep: number;
     notes?: string;
-    interviews: Interview[]; // Added this line
 
     constructor(data: any) {
         this.id = data.id;
@@ -19,7 +29,6 @@ export class Application {
         this.applicationDate = new Date(data.applicationDate);
         this.currentInterviewStep = data.currentInterviewStep;
         this.notes = data.notes;
-        this.interviews = data.interviews || []; // Added this line
     }
 
     async save() {
@@ -46,6 +55,34 @@ export class Application {
     static async findOne(id: number): Promise<Application | null> {
         const data = await prisma.application.findUnique({
             where: { id: id },
+        });
+        if (!data) return null;
+        return new Application(data);
+    }
+
+    static async findByPositionId(positionId: number): Promise<ApplicationWithDetails[]> {
+        return prisma.application.findMany({
+            where: { positionId },
+            include: {
+                candidate: {
+                    select: { firstName: true, lastName: true },
+                },
+                interviewStep: {
+                    select: { name: true },
+                },
+                interviews: {
+                    select: { score: true },
+                },
+            },
+        });
+    }
+
+    static async findByIdAndCandidateId(
+        applicationId: number,
+        candidateId: number
+    ): Promise<Application | null> {
+        const data = await prisma.application.findFirst({
+            where: { id: applicationId, candidateId },
         });
         if (!data) return null;
         return new Application(data);
