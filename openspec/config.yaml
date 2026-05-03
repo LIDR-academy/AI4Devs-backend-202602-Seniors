@@ -1,0 +1,62 @@
+schema: spec-driven
+
+context: |
+  # Project Context — LTI Talent Tracking System
+
+  ## Tech Stack
+  - Runtime: Node.js 24.14.0
+  - Package manager: npm
+  - Backend: Express 4.19.2 + TypeScript 4.9.5, Prisma ORM 5.13.0
+  - Frontend: React 18.3.1 (Create React App) + TypeScript
+  - Database: PostgreSQL 14+ (docker-compose)
+  - Testing: Jest 29.7.0 + ts-jest (backend), Jest + React Testing Library (frontend)
+
+  ## API Standards
+  - RESTful JSON
+  - Error responses: { error, code, message }
+  - Versioned under /api/v1/ for new endpoints
+  - Auth via JWT in Authorization header (when present)
+
+  ## Coding Conventions
+  - ES2022+ / TypeScript strict
+  - snake_case for DB columns, camelCase for JS/TS variables
+  - JSDoc on public exports
+  - Minimum 80% coverage for new code
+
+  ## Project Structure (existing)
+  - backend/src/{domain,application,infrastructure,presentation,routes,tests}
+  - frontend/src
+  - docker-compose.yml at repo root
+
+  ## Development Workflow
+  - Proposal first, implementation second
+  - Specs are the source of truth
+  - Tests must pass before merge
+
+testing:
+  framework: Jest
+  coverage: ">=80%"
+  types: [unit, integration]
+
+rules:
+  proposal:
+    - Include clear problem statement
+    - Specify scope and timeline
+    - Outline benefits and trade-offs
+  design:
+    - Document all API endpoints with request/response examples
+    - Include database schema changes (Prisma migrations)
+    - List new dependencies
+    - Outline implementation steps
+    - Define test cases BEFORE implementation
+  spec:
+    - Clear, declarative language
+    - Given / When / Then for behaviors
+    - Reference existing patterns before inventing new ones
+    - Keep version history with dates
+  tasks:
+    - Atomic, testable units
+    - Estimate effort per task
+    - Mark dependencies
+    - Include QA + documentation tasks
+    - Each new feature ships with unit + integration tests

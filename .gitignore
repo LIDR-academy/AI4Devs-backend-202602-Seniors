@@ -26,3 +26,7 @@ yarn-error.log*
 .vscode
 
 # .env
+
+# prompts
+prompts/master_prompt.md
+prompts/metaprompt.md

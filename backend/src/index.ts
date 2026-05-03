@@ -3,6 +3,8 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
+import positionRoutes from './routes/positionRoutes';
+import applicationRoutes from './routes/applicationRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
 
@@ -42,6 +44,10 @@ app.use('/candidates', candidateRoutes);
 // Route for file uploads
 app.post('/upload', uploadFile);
 
+// Versioned API routes
+app.use('/api/v1/positions', positionRoutes);
+app.use('/api/v1/candidates', applicationRoutes);
+
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
@@ -59,6 +65,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).send('Something broke!');
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+  });
+}
