@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/emarques/.claude/skills/**)",
+      "Read(//Users/emarques/.agents/skills/typescript-unit-testing/**)",
+      "Read(//Users/emarques/.agents/skills/agile-product-owner/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/emarques/Projects/ai4devs/session9-EM/.claude/skills"
+    ]
+  }
+}

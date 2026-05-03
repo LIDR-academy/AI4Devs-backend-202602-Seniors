@@ -1,3 +1,57 @@
+export interface ValidationErrorDetail {
+    field: string;
+    message: string;
+}
+
+export class ValidationError extends Error {
+    details: ValidationErrorDetail[];
+    constructor(message: string, details: ValidationErrorDetail[]) {
+        super(message);
+        this.name = 'ValidationError';
+        this.details = details;
+    }
+}
+
+export interface StageUpdateData {
+    applicationId: number;
+    newInterviewStep: number;
+    notes?: string;
+}
+
+export const validateStageUpdateData = (data: Record<string, unknown>): StageUpdateData => {
+    const errors: ValidationErrorDetail[] = [];
+
+    if (data.applicationId === undefined || data.applicationId === null) {
+        errors.push({ field: 'applicationId', message: 'Application ID is required' });
+    } else if (typeof data.applicationId !== 'number' || !Number.isInteger(data.applicationId) || data.applicationId <= 0) {
+        errors.push({ field: 'applicationId', message: 'Application ID must be a positive integer' });
+    }
+
+    if (data.newInterviewStep === undefined || data.newInterviewStep === null) {
+        errors.push({ field: 'newInterviewStep', message: 'Interview step ID is required' });
+    } else if (typeof data.newInterviewStep !== 'number' || !Number.isInteger(data.newInterviewStep) || data.newInterviewStep <= 0) {
+        errors.push({ field: 'newInterviewStep', message: 'Interview step ID must be a positive integer' });
+    }
+
+    if (data.notes !== undefined && data.notes !== null) {
+        if (typeof data.notes !== 'string') {
+            errors.push({ field: 'notes', message: 'Notes must be a string' });
+        } else if (data.notes.length > 500) {
+            errors.push({ field: 'notes', message: 'Notes must not exceed 500 characters' });
+        }
+    }
+
+    if (errors.length > 0) {
+        throw new ValidationError('Validation failed', errors);
+    }
+
+    return {
+        applicationId: data.applicationId as number,
+        newInterviewStep: data.newInterviewStep as number,
+        notes: data.notes as string | undefined,
+    };
+};
+
 const NAME_REGEX = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ ]+$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PHONE_REGEX = /^(6|7|9)\d{8}$/;
@@ -83,8 +137,8 @@ export const validateCandidateData = (data: any) => {
         return;
     }
 
-    validateName(data.firstName); 
-    validateName(data.lastName); 
+    validateName(data.firstName);
+    validateName(data.lastName);
     validateEmail(data.email);
     validatePhone(data.phone);
     validateAddress(data.address);

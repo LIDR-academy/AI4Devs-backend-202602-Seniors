@@ -1,0 +1,58 @@
+schema: spec-driven
+
+context: |
+  Project: LTI — recruitment platform backend
+  Full standards: ai-specs/specs/backend-standards.md (always read before proposing or implementing)
+
+  Tech stack:
+    - Node.js / TypeScript 4.9.5 (strict mode) / Express 4.19.2 / Prisma 5.13.0 / PostgreSQL
+    - Testing: Jest 29.7.0 + ts-jest — use jest.fn() for mocks, NO @golevelup/ts-jest or NestJS utilities
+    - Test files: *.test.ts co-located with source, 90% coverage target
+
+  Architecture — all new code must follow this layer order top to bottom:
+    1. api-spec.yaml          (OpenAPI 3.0 contract — update first)
+    2. src/routes/            (register route, delegate to controller)
+    3. src/presentation/controllers/  (parse HTTP, call service, return envelope)
+    4. src/application/services/      (business logic, call repository interface)
+    5. src/domain/repositories/       (TypeScript interface — ICandidateRepository, etc.)
+    6. src/infrastructure/            (Prisma implementation of repository interface)
+
+  Never skip layers. Never call Prisma directly from a controller or service.
+
+  Forward-only rule:
+    Do NOT refactor or clean up existing legacy code unless it is strictly required to
+    wire up the new feature. If a legacy file must be touched (e.g. src/index.ts to
+    register a new route), make the minimum viable change only.
+
+  Known dead code — do NOT build on these patterns:
+    - req.prisma in src/index.ts exists but is unused by all current handlers
+    - Inline route handlers in src/routes/ that bypass the controller layer
+    - const prisma = new PrismaClient() inside domain model files
+
+  API contract rule:
+    Every new endpoint must be added to backend/api-spec.yaml before or alongside
+    implementation. Never define request/response shapes only in code.
+
+  Response envelope (all new endpoints must use this shape):
+    Success: { "success": true, "data": { ... } }
+    Error:   { "success": false, "error": { "message": "...", "code": "ERROR_CODE" } }
+
+  Language: all code, comments, error messages, and logs must be in English.
+
+rules:
+  proposal:
+    - State which layers will be created (route, controller, service, repository interface, infrastructure impl)
+    - Include a "Non-goals" section explicitly listing legacy files that will NOT be refactored
+    - Confirm api-spec.yaml will be updated as part of the change
+
+  design:
+    - Show the full relative file path for every new or modified file
+    - Define the repository interface contract (method signatures) before any implementation detail
+    - Include the api-spec.yaml additions/changes required for the endpoint
+    - Do not design around req.prisma — use constructor-injected repositories
+
+  tasks:
+    - First task must always be "Update api-spec.yaml with the new endpoint contract"
+    - Each task should map to exactly one layer (one file per task where possible)
+    - Every implementation task must be paired with a corresponding test task
+    - Last task must be "Run npm test and verify coverage meets 90% threshold"

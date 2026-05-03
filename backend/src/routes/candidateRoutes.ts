@@ -1,7 +1,17 @@
 import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
 import { addCandidate, getCandidateById } from '../presentation/controllers/candidateController';
+import { ApplicationRepository } from '../infrastructure/repositories/ApplicationRepository';
+import { CandidateStageService } from '../application/services/candidateStageService';
+import { makeUpdateCandidateStage } from '../presentation/controllers/candidateStageController';
 
 const router = Router();
+
+const prisma = new PrismaClient();
+const applicationRepository = new ApplicationRepository(prisma);
+const candidateStageService = new CandidateStageService(applicationRepository);
+
+router.put('/:id/stage', makeUpdateCandidateStage(candidateStageService));
 
 router.post('/', async (req, res) => {
   try {

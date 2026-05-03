@@ -3,6 +3,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
+import positionRoutes from './routes/positionRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
 
@@ -38,6 +39,7 @@ app.use(cors({
 
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
+app.use('/positions', positionRoutes);
 
 // Route for file uploads
 app.post('/upload', uploadFile);
@@ -53,10 +55,13 @@ app.get('/', (req, res) => {
   res.send('Hola LTI!');
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.type('text/plain'); 
-  res.status(500).send('Something broke!');
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof Error && err.name === 'NotFoundError') {
+    res.status(404).json({ success: false, error: { message: err.message, code: 'NOT_FOUND' } });
+    return;
+  }
+  const message = err instanceof Error ? err.message : 'Internal server error';
+  res.status(500).json({ success: false, error: { message, code: 'INTERNAL_SERVER_ERROR' } });
 });
 
 app.listen(port, () => {
