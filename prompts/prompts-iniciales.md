@@ -31,3 +31,35 @@ Use the superpowers writing-plans skill to create a detailed implementation plan
 - Use a single Prisma query with include (no N+1) for the GET endpoint
 - No authentication, pagination, or filtering required
 ```
+
+## Prompt 2 — Añadir TDD al plan
+
+```
+Update the implementation plan to use TDD (Test-Driven Development) for both endpoints. Use the superpowers test-driven-development skill to guide the approach.
+
+For each service function and controller, the cycle must be:
+1. Write a failing test that specifies the expected behaviour
+2. Write the minimum code to make the test pass
+3. Refactor if needed, keeping tests green
+
+## Testing constraints
+- Use Jest (already configured in backend/jest.config.js)
+- Mock PrismaClient in unit tests — never hit a real database
+- Cover the following cases per endpoint:
+
+### GET /positions/:id/candidates
+- Returns mapped candidate list for a valid position with applications
+- Returns [] for a valid position with no applications
+- Returns 404 when the position does not exist
+- Returns 400 when :id is not a valid integer
+- Computes averageScore correctly (non-null scores only, null when none)
+
+### PUT /candidates/:id/stage
+- Returns updated application for valid id and body
+- Returns 404 when the application does not exist
+- Returns 404 when the target InterviewStep does not exist
+- Returns 400 when :id is not a valid integer
+- Returns 400 when currentInterviewStep is missing or not a positive integer
+
+Update the plan so that each implementation step is preceded by its corresponding test step.
+```

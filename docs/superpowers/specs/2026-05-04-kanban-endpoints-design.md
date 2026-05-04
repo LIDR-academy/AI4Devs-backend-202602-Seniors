@@ -102,6 +102,27 @@ Follows the existing layered pattern: routes → controller → service → Pris
 4. Call `prisma.application.update` — catch Prisma `P2025` and map to `404`
 5. Return updated record
 
+## Testing (TDD)
+
+Implementation follows a strict Red → Green → Refactor cycle. Each service function and controller is tested before its implementation code is written.
+
+**Test framework:** Jest (configured in `backend/jest.config.js`)  
+**Prisma:** mocked in all unit tests — no real database calls.
+
+### Test cases — GET /positions/:id/candidates
+- Returns mapped candidate list for a valid position with applications
+- Returns `[]` for a valid position with no applications
+- Returns `404` when the position does not exist
+- Returns `400` when `:id` is not a valid integer
+- Computes `averageScore` correctly (non-null scores only; `null` when none)
+
+### Test cases — PUT /candidates/:id/stage
+- Returns updated application for valid id and body
+- Returns `404` when the application does not exist
+- Returns `404` when the target InterviewStep does not exist
+- Returns `400` when `:id` is not a valid integer
+- Returns `400` when `currentInterviewStep` is missing or not a positive integer
+
 ## Out of Scope
 - Authentication / authorization
 - Pagination for the candidates list
