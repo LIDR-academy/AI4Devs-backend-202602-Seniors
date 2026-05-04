@@ -69,3 +69,38 @@ Update the plan so that each implementation step is preceded by its correspondin
 ```
 Execute the implementation plan at docs/superpowers/plans/2026-05-04-kanban-endpoints.md using the superpowers subagent-driven-development skill. Dispatch one subagent per task, run spec compliance and code quality reviews after each task, and fix any issues before moving to the next task.
 ```
+
+## Prompt 4 — Actualizar la documentación con los nuevos endpoints
+
+```
+Update the existing documentation in the repository to reflect the two new endpoints added in this branch.
+
+Files to update:
+
+### backend/api-spec.yaml
+Add two new path entries to the OpenAPI 3.0 spec:
+
+1. GET /positions/{id}/candidates
+   - Summary: Get candidates in pipeline for a position
+   - Path param: id (integer, required) — Position ID
+   - Response 200: array of objects with candidateId (integer), fullName (string),
+     currentInterviewStep (object with id: integer and name: string),
+     averageScore (number, nullable)
+   - Response 400: invalid position ID
+   - Response 404: position not found
+   - Response 500: internal server error
+
+2. PUT /candidates/{id}/stage
+   - Summary: Update the interview stage of a candidate application
+   - Path param: id (integer, required) — Application ID
+   - Request body: { currentInterviewStep: integer } (required)
+   - Response 200: object with id, candidateId, positionId, currentInterviewStep (all integers)
+   - Response 400: invalid application ID or invalid currentInterviewStep
+   - Response 404: application not found or interview step not found
+   - Response 500: internal server error
+
+Also add the missing GET /candidates/{id} entry that exists in the code but is absent from the spec.
+
+### README.md
+Add an "API Endpoints" section (in both EN and ES) listing all available endpoints with a brief description and example for the two new ones.
+```
