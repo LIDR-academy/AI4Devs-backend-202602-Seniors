@@ -333,6 +333,7 @@ paths:
                     averageScore:
                       type: number
                       format: float
+                      nullable: true
         '400':
           description: Invalid position ID
         '404':
