@@ -185,4 +185,156 @@ paths:
           description: Invalid file type, only PDF and DOCX are allowed
         '500':
           description: Error during the file upload process
+  /candidates/{id}:
+    get:
+      summary: Get a candidate by ID
+      description: Returns a candidate by their unique identifier.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the candidate
+      responses:
+        '200':
+          description: Candidate found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                  address:
+                    type: string
+                  educations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        institution:
+                          type: string
+                        title:
+                          type: string
+                        startDate:
+                          type: string
+                        endDate:
+                          type: string
+                  workExperiences:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        company:
+                          type: string
+                        position:
+                          type: string
+                        description:
+                          type: string
+                        startDate:
+                          type: string
+                        endDate:
+                          type: string
+                  cv:
+                    type: object
+        '400':
+          description: Invalid candidate ID
+        '404':
+          description: Candidate not found
+  /candidates/{id}/stage:
+    put:
+      summary: Move a candidate application to a different interview stage
+      description: Updates the current interview step of a specific application. The path parameter id refers to the Application ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentInterviewStep
+              properties:
+                currentInterviewStep:
+                  type: integer
+                  description: ID of the interview step to move the application to
+      responses:
+        '200':
+          description: Application stage updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Application ID
+                  candidateId:
+                    type: integer
+                  positionId:
+                    type: integer
+                  currentInterviewStep:
+                    type: integer
+        '400':
+          description: Invalid application ID or request body
+        '404':
+          description: Application or interview step not found
+        '500':
+          description: Internal server error
+  /positions/{id}/candidates:
+    get:
+      summary: Get all candidates in pipeline for a position
+      description: Returns all candidate applications for a given position, including their current interview step and average score.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Unique identifier of the position
+      responses:
+        '200':
+          description: List of candidates for the position (empty array if no applications)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    candidateId:
+                      type: integer
+                    fullName:
+                      type: string
+                    currentInterviewStep:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                    averageScore:
+                      type: number
+                      format: float
+        '400':
+          description: Invalid position ID
+        '404':
+          description: Position not found
+        '500':
+          description: Internal server error
 

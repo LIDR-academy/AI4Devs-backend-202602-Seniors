@@ -157,6 +157,50 @@ POST http://localhost:3010/candidates
 }
 ```
 
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /candidates | Add a new candidate |
+| GET | /candidates/:id | Get a candidate by ID |
+| GET | /positions/:id/candidates | Get all candidates in pipeline for a position |
+| PUT | /candidates/:id/stage | Move a candidate to a different interview stage |
+| POST | /upload | Upload a CV file |
+
+### GET /positions/:id/candidates
+
+Returns all candidates in the recruitment pipeline for a given position.
+
+```
+GET http://localhost:3010/positions/1/candidates
+```
+
+Response:
+```json
+[
+  {
+    "candidateId": 1,
+    "fullName": "Jane Doe",
+    "currentInterviewStep": { "id": 3, "name": "Technical Interview" },
+    "averageScore": 7.5
+  }
+]
+```
+
+### PUT /candidates/:id/stage
+
+Moves a candidate application to a different interview stage. `:id` is the Application ID.
+
+```
+PUT http://localhost:3010/candidates/7/stage
+{ "currentInterviewStep": 4 }
+```
+
+Response:
+```json
+{ "id": 7, "candidateId": 1, "positionId": 2, "currentInterviewStep": 4 }
+```
+
 --------------------------------------------
 
 # LTI - Sistema de Seguimiento de Talento | ES
@@ -312,5 +356,49 @@ POST http://localhost:3010/candidates
         "fileType": "application/pdf"
     }
 }
+```
+
+## API Endpoints
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | /candidates | Añadir un nuevo candidato |
+| GET | /candidates/:id | Obtener un candidato por ID |
+| GET | /positions/:id/candidates | Obtener todos los candidatos en el pipeline de una posición |
+| PUT | /candidates/:id/stage | Mover un candidato a una fase de entrevista diferente |
+| POST | /upload | Subir un archivo de CV |
+
+### GET /positions/:id/candidates
+
+Devuelve todos los candidatos en el pipeline de reclutamiento para una posición dada.
+
+```
+GET http://localhost:3010/positions/1/candidates
+```
+
+Respuesta:
+```json
+[
+  {
+    "candidateId": 1,
+    "fullName": "Jane Doe",
+    "currentInterviewStep": { "id": 3, "name": "Technical Interview" },
+    "averageScore": 7.5
+  }
+]
+```
+
+### PUT /candidates/:id/stage
+
+Mueve una candidatura a una fase de entrevista diferente. `:id` es el ID de la candidatura.
+
+```
+PUT http://localhost:3010/candidates/7/stage
+{ "currentInterviewStep": 4 }
+```
+
+Respuesta:
+```json
+{ "id": 7, "candidateId": 1, "positionId": 2, "currentInterviewStep": 4 }
 ```
 
