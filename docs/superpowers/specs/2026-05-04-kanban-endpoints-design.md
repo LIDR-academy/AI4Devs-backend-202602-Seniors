@@ -34,6 +34,8 @@ Returns all candidates currently in the pipeline for a given position.
 - `currentInterviewStep` — the InterviewStep the application is currently at (`id` + `name`)
 - `averageScore` — mean of all non-null `Interview.score` values for the application; `null` if no scored interviews exist; rounded to 2 decimal places
 
+Returns `[]` (empty array) when the position exists but has no applications.
+
 **Errors:**
 - `400` — `:id` is not a valid integer
 - `404` — position does not exist
