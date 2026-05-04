@@ -63,3 +63,9 @@ For each service function and controller, the cycle must be:
 
 Update the plan so that each implementation step is preceded by its corresponding test step.
 ```
+
+## Prompt 3 — Ejecutar el plan con agentes paralelos
+
+```
+Execute the implementation plan at docs/superpowers/plans/2026-05-04-kanban-endpoints.md using the superpowers subagent-driven-development skill. Dispatch one subagent per task, run spec compliance and code quality reviews after each task, and fix any issues before moving to the next task.
+```
