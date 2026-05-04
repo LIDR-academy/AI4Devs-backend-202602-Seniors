@@ -3,7 +3,7 @@ import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -94,8 +94,13 @@ export const updateCandidateStage = async (
         currentInterviewStep: true,
       },
     });
-  } catch (error: any) {
-    if (error.code === 'P2025') throw new Error('APPLICATION_NOT_FOUND');
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2025'
+    ) {
+      throw new Error('APPLICATION_NOT_FOUND');
+    }
     throw error;
   }
 };
