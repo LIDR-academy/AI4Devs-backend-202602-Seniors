@@ -250,6 +250,8 @@ paths:
           description: Invalid candidate ID
         '404':
           description: Candidate not found
+        '500':
+          description: Internal server error
   /candidates/{id}/stage:
     put:
       summary: Move a candidate application to a different interview stage
