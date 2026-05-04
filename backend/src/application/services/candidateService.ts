@@ -72,7 +72,12 @@ export const findCandidateById = async (
 export const updateCandidateStage = async (
   applicationId: number,
   currentInterviewStep: number,
-) => {
+): Promise<{
+  id: number;
+  candidateId: number;
+  positionId: number;
+  currentInterviewStep: number;
+}> => {
   const step = await prisma.interviewStep.findUnique({
     where: { id: currentInterviewStep },
   });
