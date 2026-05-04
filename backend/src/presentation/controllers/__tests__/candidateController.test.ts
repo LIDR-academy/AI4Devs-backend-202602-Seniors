@@ -75,6 +75,18 @@ describe('updateCandidateStage controller', () => {
     });
   });
 
+  it('returns 400 when currentInterviewStep is zero', async () => {
+    const req = makeReq({ id: '7' }, { currentInterviewStep: 0 });
+    const res = makeRes();
+
+    await updateCandidateStage(req as Request, res as unknown as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'currentInterviewStep must be a positive integer',
+    });
+  });
+
   it('returns 404 when application is not found', async () => {
     mockUpdateCandidateStage.mockRejectedValue(
       new Error('APPLICATION_NOT_FOUND'),
