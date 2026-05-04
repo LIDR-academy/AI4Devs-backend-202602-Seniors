@@ -51,6 +51,26 @@ describe('updateCandidateStage controller', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Invalid application ID' });
   });
 
+  it('returns 400 when :id is zero', async () => {
+    const req = makeReq({ id: '0' }, { currentInterviewStep: 4 });
+    const res = makeRes();
+
+    await updateCandidateStage(req as Request, res as unknown as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid application ID' });
+  });
+
+  it('returns 400 when :id is negative', async () => {
+    const req = makeReq({ id: '-1' }, { currentInterviewStep: 4 });
+    const res = makeRes();
+
+    await updateCandidateStage(req as Request, res as unknown as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid application ID' });
+  });
+
   it('returns 400 when currentInterviewStep is missing', async () => {
     const req = makeReq({ id: '7' }, {});
     const res = makeRes();
