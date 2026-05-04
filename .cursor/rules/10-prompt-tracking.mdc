@@ -37,7 +37,7 @@ Guarantee a deterministic, append-only, auditable log of user prompts so reviewe
 3. If **`prompts/prompts-ICS.md`** is missing, initialize it with exactly this first line followed by one blank line:
 
    ```markdown
-   # Prompts User Log
+   # Prompts log
    ```
 
 4. The assistant MUST append exactly **one** new block at the **end** of the file.
@@ -140,9 +140,9 @@ The assistant MUST determine `### Agent:` using the following priority order. Us
 | `@.cursor/agents/backend-developer.md implement this endpoint` | `backend-developer` |
 | `Use backend-test-writer to create tests` | `backend-test-writer` |
 | `Run the plan-ticket skill` | `skill:plan-ticket` |
-| Session opened in Agent mode, no explicit agent/skill | `Agent` |
-| Session opened in Chat mode, no explicit agent/skill | `Chat` |
-| Unknown mode, no explicit agent/skill | `Cursor (unspecified mode)` |
+| Session opened in Agent mode, no explicit agent/skill | `agent` |
+| Session opened in Chat mode, no explicit agent/skill | `chat` |
+| Unknown mode, no explicit agent/skill | `cursor (unspecified mode)` |
 
 ## Model derivation rules
 

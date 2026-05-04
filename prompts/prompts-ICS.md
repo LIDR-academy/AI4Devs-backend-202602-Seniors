@@ -1,7 +1,7 @@
 # Prompts log
 
 ## Prompt - 2026-05-03T01:30:58Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 You are a senior **Systems Architecture Expert** with deep experience in backend architecture, API design, clean architecture, domain-driven design, scalable systems, testing strategy, documentation standards, and AI-assisted software development workflows.
@@ -103,7 +103,7 @@ After completing the repository analysis and Cursor rule make a report.
 
 Return your response in the following structure:
 
-```md
+````md
 # Repository Analysis Summary
 
 [Summarize the relevant architecture, conventions, and standards discovered.]
@@ -127,6 +127,8 @@ File:
 
 [List assumptions, missing details, or questions that should be clarified before implementation.]
 
+````
+
 ## Quality Criteria
 
 Your response will be considered successful if:
@@ -138,7 +140,7 @@ Your response will be considered successful if:
 ---
 
 ## Prompt - 2026-05-03T02:12:03Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 You are a Backend API Design expert. You specialize in spec-driven development, clean architecture, maintainable backend systems, database-driven APIs, and implementation planning for specialized backend agents.
@@ -274,7 +276,7 @@ The plan must be written in English.
 
 Use this structure:
 
-```md
+````md
 # Spec-Driven Plan: GET /positions/:id/candidates
 
 ## 1. Backend Context Analysis
@@ -371,7 +373,7 @@ Provide a step-by-step checklist for the future backend implementation agent.
 List only the assumptions that could not be verified from the backend codebase.
 
 Do not ask the user questions unless implementation would be unsafe without the answer. Prefer documenting assumptions and continuing with the plan.
-```
+````
 
 After creating the file, return a concise summary in chat with:
 
@@ -381,7 +383,6 @@ After creating the file, return a concise summary in chat with:
 4. Any blocking assumptions or risks.
 
 Remember: create the plan only. Do not implement the endpoint.
-```
 
 ---
 ## Prompt - 2026-05-03T03:15:00Z
@@ -408,7 +409,7 @@ Return the report in the format defined in the agent's "Output Style" section.
 
 ---
 ## Prompt - 2026-05-03T03:51:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Claude 4.6 Sonnet
 
 You are a **Senior Backend Test Engineer** specialized in validating backend implementations, test strategy, and test quality across layered architectures.
@@ -417,7 +418,7 @@ You are a **Senior Backend Test Engineer** specialized in validating backend imp
 
 ---
 ## Prompt - 2026-05-03T04:04:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Claude 4.6 Sonnet
 
 You are a Senior Backend Test Engineer.
@@ -428,8 +429,8 @@ Your responsibility is to implement reliable, maintainable, and well-structured 
 
 ---
 ## Prompt - 2026-05-03T04:45:00Z
-### Agent: Agent
-#### Model: Auto
+### Agent: agent
+#### Model: Composer 2
 
 You are a **Senior Backend Engineer** with strong experience in code documentation, maintainability, and pre-merge quality checks.
 
@@ -462,7 +463,7 @@ When finished, provide a concise summary with: files updated, types of docstring
 
 ---
 ## Prompt - 2026-05-03T05:15:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Claude 4.7 Opus
 
 You are a **Backend API Design Expert**.
@@ -569,28 +570,28 @@ Return the final report in the exact format defined under "Output Style" in `.cu
 
 ---
 ## Prompt - 2026-05-03T06:50:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 Conduct a Senior Backend Test Engineer audit of PUT /candidates/:id/stage per backend/docs/specs/put-candidates-stage.md and git-derived scope; inspect backend-only tests and implementation; produce backend/docs/QA-put-candidates-stage.md using the mandated Markdown sections (Executive Summary through Final Recommendation); audit only (no prod refactors unless testability blocker); frontend out of scope.
 
 ---
 ## Prompt - 2026-05-03T07:20:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 Please rename backend/docs/test-audit.md to QA-get-position-candidates.md to align the names of the files that store the results of the test audits.
 
 ---
 ## Prompt - 2026-05-03T18:12:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 Senior Backend Test Engineer brief: implement recommended test plan from `backend/docs/QA-put-candidates-stage.md`; run tests/build; update audit with scores (Previous / Last) and post-implementation sections. Constraints: backend/ only, no prod behavior change.
 
 ---
 ## Prompt - 2026-05-03T20:15:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 You are a **Senior Backend Engineer** with strong experience in TypeScript documentation, maintainability, test readability, and pre-merge quality checks.
@@ -601,7 +602,7 @@ Remember: scope is only git-derived modified/added files under `backend/src` and
 
 ---
 ## Prompt - 2026-05-03T21:05:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 Verify each finding against the current code and only fix it if needed.
@@ -616,7 +617,7 @@ header to mention backend/tests/ and jest.config.js as the canonical examples.
 
 ---
 ## Prompt - 2026-05-03T21:12:00Z
-### Agent: Agent
+### Agent: agent
 #### Model: Composer 2
 
 Verify each finding against the current code and only fix it if needed.
@@ -631,4 +632,3 @@ applications (array of objects including nested position and interviews
 structures as returned by the handler). Ensure each new array item is documented
 with the correct property names and types (string/date as appropriate) so the
 schema for GET /candidates/{id} accurately reflects the handler's returned Candidate object.
-
