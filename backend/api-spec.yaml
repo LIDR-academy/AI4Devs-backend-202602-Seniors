@@ -152,6 +152,381 @@ paths:
           description: Bad request (invalid input data)
         '500':
           description: Internal server error
+  /candidates/{id}:
+    get:
+      summary: Get a candidate by ID
+      description: Retrieves a single candidate record by their numeric primary key.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the candidate
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Candidate found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Candidate row as serialized from the controller (domain model mirrors Prisma camelCase relation names via property names `education` and `workExperience`).
+                properties:
+                  id:
+                    type: integer
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  email:
+                    type: string
+                  phone:
+                    type: string
+                    nullable: true
+                  address:
+                    type: string
+                    nullable: true
+                  education:
+                    description: Matches Prisma `educations` relation; keyed `education` on the Candidate model instance returned by GET.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        institution:
+                          type: string
+                        title:
+                          type: string
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        candidateId:
+                          type: integer
+                  workExperience:
+                    description: Matches Prisma `workExperiences` relation; keyed `workExperience` on the Candidate model instance returned by GET.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        company:
+                          type: string
+                        position:
+                          type: string
+                        description:
+                          type: string
+                          nullable: true
+                        startDate:
+                          type: string
+                          format: date-time
+                        endDate:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        candidateId:
+                          type: integer
+                  resumes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        candidateId:
+                          type: integer
+                        filePath:
+                          type: string
+                        fileType:
+                          type: string
+                        uploadDate:
+                          type: string
+                          format: date-time
+                  applications:
+                    type: array
+                    description: >-
+                      Included from Prisma with nested position (id, title) and interviews shaped by the finder query (interviewDate, notes, score, interviewStep.name only).
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        positionId:
+                          type: integer
+                        candidateId:
+                          type: integer
+                        applicationDate:
+                          type: string
+                          format: date-time
+                        currentInterviewStep:
+                          type: integer
+                        notes:
+                          type: string
+                          nullable: true
+                        position:
+                          type: object
+                          nullable: false
+                          properties:
+                            id:
+                              type: integer
+                            title:
+                              type: string
+                        interviews:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              interviewDate:
+                                type: string
+                                format: date-time
+                              notes:
+                                type: string
+                                nullable: true
+                              score:
+                                type: integer
+                                nullable: true
+                              interviewStep:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid ID format
+        '404':
+          description: Candidate not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Candidate not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
+  /positions/{id}/candidates:
+    get:
+      summary: Get candidates in process for a position
+      description: >
+        Returns every application currently in process for the given position.
+        For each application the response includes the candidate's name,
+        their current interview step, and the average score across all
+        interviews recorded for that application (null when no scored
+        interviews exist).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the Position
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: >
+            Position found. Returns the positionId and a (possibly empty)
+            list of candidate entries — one per Application row.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  positionId:
+                    type: integer
+                    description: The position primary key echoed from the path parameter
+                  candidates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        applicationId:
+                          type: integer
+                          description: Primary key of the Application row
+                        candidateId:
+                          type: integer
+                          description: Primary key of the Candidate
+                        firstName:
+                          type: string
+                          description: Candidate first name
+                        lastName:
+                          type: string
+                          description: Candidate last name
+                        fullName:
+                          type: string
+                          description: Convenience concatenation of firstName and lastName
+                        currentInterviewStep:
+                          type: integer
+                          description: FK to InterviewStep.id representing the applicant's current pipeline step
+                        averageInterviewScore:
+                          type: number
+                          nullable: true
+                          description: >
+                            Arithmetic mean of non-null Interview.score values for this
+                            application. null when no interviews exist or all scores are null.
+        '400':
+          description: Invalid ID format (non-numeric path parameter)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid ID format
+        '404':
+          description: Position not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Position not found
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
+  /candidates/{id}/stage:
+    put:
+      summary: Update the current interview step of a candidate's application
+      description: >
+        Moves a candidate forward (or backward) in their pipeline by updating
+        `Application.currentInterviewStep`. The "stage" lives on the
+        `Application` row, not on `Candidate`, so the request body must carry
+        `applicationId` to disambiguate which application of the candidate to
+        update. The new step must reference an existing `InterviewStep` that
+        belongs to the same `InterviewFlow` as the application's position.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Numeric primary key of the Candidate
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationId
+                - currentInterviewStep
+              properties:
+                applicationId:
+                  type: integer
+                  minimum: 1
+                  description: >
+                    Primary key of the Application row to mutate. Must belong
+                    to the candidate identified by the path parameter.
+                currentInterviewStep:
+                  type: integer
+                  minimum: 1
+                  description: >
+                    New `InterviewStep.id` value. Must reference an existing
+                    `InterviewStep` whose `interviewFlowId` matches the
+                    application's position interview flow.
+      responses:
+        '200':
+          description: Stage updated. Returns the persisted Application row.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Primary key of the Application row
+                  positionId:
+                    type: integer
+                    description: FK to Position.id
+                  candidateId:
+                    type: integer
+                    description: FK to Candidate.id
+                  applicationDate:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 date the application was created
+                  currentInterviewStep:
+                    type: integer
+                    description: FK to InterviewStep.id (new value just persisted)
+                  notes:
+                    type: string
+                    nullable: true
+                    description: Free-form notes on the application
+        '400':
+          description: >
+            Invalid request — non-numeric path id, missing/invalid body
+            fields, or step does not belong to the candidate's interview flow.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid applicationId
+        '404':
+          description: >
+            Candidate, Application, or InterviewStep referenced by the request
+            could not be found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Candidate not found
+        '409':
+          description: >
+            The targeted Application row exists but belongs to a different
+            candidate than the one in the path parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Application does not belong to candidate
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Internal Server Error
   /upload:
     post:
       summary: Upload a file

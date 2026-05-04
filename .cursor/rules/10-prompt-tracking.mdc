@@ -1,0 +1,267 @@
+---
+description: Mandatory deterministic append-only user prompt log with monotonic timestamps, explicit agent/skill labels, model labels, redaction, and failure behavior.
+alwaysApply: true
+---
+
+# Prompt Tracking
+
+## Quick path (read first)
+
+- **Input → output:** the **input** is the current **user** message; the **output** is appending exactly **one** new entry to **`prompts/prompts-ICS.md`** at the repository root, in the **same assistant turn**, after redaction.
+- **Canonical path:** always use **`prompts/prompts-ICS.md`**.
+- **Required flow when file tools are available:** acquire lock if possible → read current file → initialize if missing → compute a strictly monotonic UTC timestamp → derive `Agent` and `Model` labels → redact sensitive data → append one block at EOF → verify the block is the final block.
+- **Timestamp ordering guarantee:** the new heading timestamp MUST be greater than every existing `## Prompt - <timestamp>` in the file. If current UTC is not greater than the maximum existing timestamp, use `max_existing_timestamp + 60 seconds`.
+- **Agent/skill labeling guarantee:** if the user prompt or session explicitly invokes an agent or skill, `### Agent:` MUST reflect that explicit invocation. Generic labels such as `Agent`, `Chat`, or `Ask` are only allowed when no explicit agent/skill can be derived.
+- **Failure behavior:** if the write is skipped, unavailable, or fails, the assistant must say so in the user-visible reply and include the exact path attempted.
+
+## Purpose
+
+Guarantee a deterministic, append-only, auditable log of user prompts so reviewers and maintainers can reproduce how AI assistance was used in this repository.
+
+## Scope
+
+- **Global for this repository:** every assistant turn that produces a user-visible reply in this workspace.
+- **Project-specific path:** **`prompts/prompts-ICS.md`** at the repository root.
+- **One entry per user message answered:** do not batch separate user messages into a single prompt entry.
+
+## Single-file invariant
+
+- The only authorized prompt tracking file is **`prompts/prompts-ICS.md`** at the repository root.
+- The assistant MUST NOT duplicate the same prompt entry in multiple files.
+- If another prompt log file already exists, ignore it for normal tracking unless the user explicitly asks for log migration or repair.
+
+## Requirements
+
+1. After **every** user message the assistant answers, including short follow-ups, the assistant MUST persist that user message to **`prompts/prompts-ICS.md`** using a real filesystem write in the same turn as the reply.
+2. The assistant MUST create the file **`prompts/prompts-ICS.md`** at the repository root if it does not exist.
+3. If **`prompts/prompts-ICS.md`** is missing, initialize it with exactly this first line followed by one blank line:
+
+   ```markdown
+   # Prompts log
+   ```
+
+4. The assistant MUST append exactly **one** new block at the **end** of the file.
+5. If there is already prompt content after `# Prompts log`, insert a single separator line containing only **`---`** immediately before the new block.
+6. The assistant MUST NOT place **`---`** as the first line of the file.
+7. The assistant MUST NOT delete, reorder, sort, rewrite, or “fix” earlier entries during normal logging. Existing entries are immutable unless the user explicitly asks for log repair.
+8. The assistant MUST use a timestamp in UTC ISO 8601 seconds format: `YYYY-MM-DDTHH:mm:ssZ`.
+9. The assistant MUST make the new timestamp strictly greater than every existing prompt timestamp in the file.
+10. The assistant MUST derive `### Agent:` using the **Agent and skill derivation rules** below.
+11. The assistant MUST derive `#### Model:` using the **Model derivation rules** below.
+12. The assistant MUST apply the **Redaction policy** before writing the prompt body.
+13. The assistant MUST verify after writing that the new block is present as the final prompt block in the file.
+
+## Deterministic append algorithm
+
+Use this algorithm every time file tools are available:
+
+1. **Lock:** attempt to create **`prompts/.prompts-ICS.lock/`** as an atomic lock directory before reading and appending.
+   - If the lock already exists, wait briefly and retry a reasonable number of times.
+   - If locking is not supported by the environment, continue without a lock but still re-read the file immediately before appending.
+   - Always remove the lock after the append attempt completes.
+2. **Read current file:** read the full current content of **`prompts/prompts-ICS.md`** after acquiring the lock, not before.
+3. **Initialize if missing:** create the file with `# Prompts log` and a blank line when missing.
+4. **Extract existing timestamps:** parse all headings matching:
+
+   ```regex
+   ^## Prompt - (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$
+   ```
+
+5. **Compute candidate timestamp:** use current UTC at write time, truncated to seconds.
+6. **Compute final timestamp:**
+   - If no valid existing timestamps exist, use the candidate timestamp.
+   - If candidate timestamp is greater than the maximum existing timestamp, use the candidate timestamp.
+   - Otherwise, use `maximum existing timestamp + 60 seconds`.
+7. **Append at EOF only:** append the separator when required, then append the new block.
+8. **Verify:** re-read the file and confirm:
+   - the final `## Prompt - ...` block is the one just written;
+   - its timestamp equals the computed final timestamp;
+   - its timestamp is greater than every earlier valid prompt timestamp;
+   - the file still contains only one `# Prompts log` header.
+
+### Timestamp examples
+
+| Existing max timestamp | Current UTC | New timestamp |
+|---|---:|---:|
+| none | `2026-05-02T20:10:00Z` | `2026-05-02T20:10:00Z` |
+| `2026-05-02T20:10:00Z` | `2026-05-02T20:10:00Z` | `2026-05-02T20:11:00Z` |
+| `2026-05-02T20:10:05Z` | `2026-05-02T20:10:00Z` | `2026-05-02T20:11:05Z` |
+
+## Entry format (required)
+
+```markdown
+## Prompt - <YYYY-MM-DDTHH:mm:ssZ>
+### Agent: <agent-or-skill-label>
+#### Model: <model-display-label>
+
+<verbatim or redacted user prompt, multiple lines allowed>
+```
+
+Example with separator between this entry and a prior entry:
+
+```markdown
+---
+## Prompt - 2026-05-02T20:10:01Z
+### Agent: system-architect
+#### Model: Claude 4.6 Sonnet
+
+Summarize recent commits.
+```
+
+## Agent and skill derivation rules
+
+The assistant MUST determine `### Agent:` using the following priority order. Use the first matching rule.
+
+| Priority | Condition | Agent label |
+|---:|---|---|
+| 1 | Current user prompt explicitly invokes an agent by path, mention, command, or natural language, e.g. `@.cursor/agents/backend-developer.md`, `@backend-developer`, `use backend-developer agent`, `call the backend-test-writer agent` | `<agent-name>` |
+| 2 | Current user prompt explicitly invokes a skill by path, mention, command, or natural language, e.g. `@.cursor/skills/plan-ticket/SKILL.md`, `/plan-ticket`, `use the plan-ticket skill` | `skill:<skill-name>` |
+| 3 | Session was launched through a specific agent file, e.g. `@.cursor/agents/system-architect.md` | `<agent-name>` |
+| 4 | Running inside a subagent spawned by a known parent agent | parent `<agent-name>` |
+| 5 | Cursor interaction mode is identifiable and no explicit agent/skill exists | `Agent`, `Chat`, or `Ask` |
+| 6 | None of the above apply | `Cursor (unspecified mode)` |
+
+### Agent/skill label normalization
+
+- Agent and skill names derived from file paths MUST be the file or folder name without extension:
+  - `.cursor/agents/system-architect.md` → `system-architect`
+  - `.cursor/skills/plan-ticket/SKILL.md` → `skill:plan-ticket`
+- Project-specific agent and skill labels MUST use lowercase `kebab-case`.
+- Preserve official Cursor interaction mode labels exactly as `Agent`, `Chat`, and `Ask`.
+- `Composer` is a deprecated interaction-mode alias. Normalize it to `Agent`.
+- Do not invent broad labels such as `backend`, `architecture`, `docs`, or `testing` when a specific agent/skill name is available.
+- If both an explicit agent and explicit skill are present in the same prompt, prefer the explicit agent as `### Agent:` because it identifies the executor.
+- If a prompt says a skill is used by an explicit agent, use the explicit agent label.
+
+### Agent/skill labeling examples
+
+| User/session signal | Required `### Agent:` |
+|---|---|
+| `@.cursor/agents/backend-developer.md implement this endpoint` | `backend-developer` |
+| `Use backend-test-writer to create tests` | `backend-test-writer` |
+| `Run the plan-ticket skill` | `skill:plan-ticket` |
+| Session opened in Agent mode, no explicit agent/skill | `agent` |
+| Session opened in Chat mode, no explicit agent/skill | `chat` |
+| Unknown mode, no explicit agent/skill | `cursor (unspecified mode)` |
+
+## Model derivation rules
+
+The assistant MUST set `#### Model:` to the model used for the reply.
+
+1. Prefer the explicit model identifier exposed by Cursor/session/system metadata for the current turn.
+2. If the model selector shows `Auto`, use the resolved underlying model when available, e.g. `Auto → Claude 4.6 Sonnet`. If the resolved model is unavailable, use `Auto`.
+3. Match model identifiers case-insensitively against the **Model derivation table** below.
+4. Match the most specific patterns first. For example, `gpt-5.4-mini` MUST be matched before `gpt-5.4`, and `claude-4.6-opus-fast` MUST be matched before `claude-4.6-opus`.
+5. If the model identifier is not listed, use the identifier as-is with reasonable title formatting.
+6. Only use `unknown` when no model identifier is present anywhere in the system, session, or model metadata.
+
+## Model derivation table
+
+Match the first row whose pattern appears in the model identification string after lowercasing and normalizing spaces, underscores, and repeated hyphens.
+
+| System/model identification pattern | Display label |
+|---|---|
+| `claude-4.7-opus`, `claude-opus-4.7`, `opus-4.7`, `claude 4.7 opus` | `Claude 4.7 Opus` |
+| `claude-4.6-opus-fast`, `claude-opus-4.6-fast`, `opus-4.6-fast`, `claude 4.6 opus fast` | `Claude 4.6 Opus (Fast mode)` |
+| `claude-4.6-opus`, `claude-opus-4.6`, `opus-4.6`, `claude 4.6 opus` | `Claude 4.6 Opus` |
+| `claude-4.6-sonnet`, `claude-sonnet-4.6`, `sonnet-4.6`, `claude 4.6 sonnet` | `Claude 4.6 Sonnet` |
+| `claude-4.5-opus`, `claude-opus-4.5`, `opus-4.5`, `claude 4.5 opus` | `Claude 4.5 Opus` |
+| `claude-4.5-sonnet`, `claude-sonnet-4.5`, `sonnet-4.5`, `claude 4.5 sonnet` | `Claude 4.5 Sonnet` |
+| `claude-4.5-haiku`, `claude-haiku-4.5`, `haiku-4.5`, `claude 4.5 haiku` | `Claude 4.5 Haiku` |
+| `claude-4-sonnet-1m`, `claude-sonnet-4-1m`, `sonnet-4-1m`, `claude 4 sonnet 1m` | `Claude 4 Sonnet 1M` |
+| `claude-4-sonnet`, `claude-sonnet-4`, `sonnet-4`, `claude 4 sonnet` | `Claude 4 Sonnet` |
+| `composer-2`, `composer 2` | `Composer 2` |
+| `composer-1.5`, `composer 1.5` | `Composer 1.5` |
+| `composer-1`, `composer 1` | `Composer 1` |
+| `gemini-3.1-pro`, `gemini 3.1 pro` | `Gemini 3.1 Pro` |
+| `gemini-3-pro-image-preview`, `gemini 3 pro image preview` | `Gemini 3 Pro Image Preview` |
+| `gemini-3-pro`, `gemini 3 pro` | `Gemini 3 Pro` |
+| `gemini-3-flash`, `gemini 3 flash` | `Gemini 3 Flash` |
+| `gemini-2.5-flash`, `gemini 2.5 flash` | `Gemini 2.5 Flash` |
+| `gpt-5.5`, `gpt-5-5`, `gpt 5.5` | `GPT-5.5` |
+| `gpt-5.4-nano`, `gpt-5-4-nano`, `gpt 5.4 nano` | `GPT-5.4 Nano` |
+| `gpt-5.4-mini`, `gpt-5-4-mini`, `gpt 5.4 mini` | `GPT-5.4 Mini` |
+| `gpt-5.4`, `gpt-5-4`, `gpt 5.4` | `GPT-5.4` |
+| `gpt-5.3-codex`, `gpt-5-3-codex`, `gpt 5.3 codex` | `GPT-5.3 Codex` |
+| `gpt-5.2-codex`, `gpt-5-2-codex`, `gpt 5.2 codex` | `GPT-5.2 Codex` |
+| `gpt-5.2`, `gpt-5-2`, `gpt 5.2` | `GPT-5.2` |
+| `gpt-5.1-codex-mini`, `gpt-5-1-codex-mini`, `gpt 5.1 codex mini` | `GPT-5.1 Codex Mini` |
+| `gpt-5.1-codex-max`, `gpt-5-1-codex-max`, `gpt 5.1 codex max` | `GPT-5.1 Codex Max` |
+| `gpt-5.1-codex`, `gpt-5-1-codex`, `gpt 5.1 codex` | `GPT-5.1 Codex` |
+| `gpt-5-codex`, `gpt 5 codex` | `GPT-5-Codex` |
+| `gpt-5-fast`, `gpt-5-high-fast`, `gpt-5-low-fast`, `gpt 5 fast` | `GPT-5 Fast` |
+| `gpt-5-mini`, `gpt 5 mini` | `GPT-5 Mini` |
+| `gpt-5`, `gpt 5` | `GPT-5` |
+| `grok-4.20`, `grok 4.20` | `Grok 4.20` |
+| `kimi-k2.5`, `kimi k2.5` | `Kimi K2.5` |
+
+## Redaction policy (required)
+
+Before writing the prompt body, replace secrets or confidential fragments with `[REDACTED]` or a typed variant such as `[REDACTED: api-key]`.
+
+Redact at minimum:
+
+- API keys, tokens, passwords, private keys, OAuth secrets, session cookies, database URLs, and credential strings.
+- Personal identifiers that are not necessary for reproducibility.
+- Private customer, financial, or legal details when not needed to understand the prompt intent.
+
+Keep enough context that the intent remains clear. If the entire prompt is sensitive, still write the heading lines and use `[REDACTED]` as the body.
+
+## File rotation
+
+Prompt tracking MUST remain centralized in **`prompts/prompts-ICS.md`** only. Do not rotate, shard, archive, mirror, or duplicate the active prompt log into another prompt-tracking file during normal operation.
+
+When **`prompts/prompts-ICS.md`** becomes large, keep appending to the same file unless the user explicitly requests a separate archival or repair operation. Even then, the active canonical tracking file remains **`prompts/prompts-ICS.md`**.
+
+## Failure behavior
+
+- If no file tool or write capability is available, logging is excused for that turn only. The assistant MAY complete the user-facing reply and MUST state that logging was excused because no write capability was available.
+- If file tools are available, the assistant MUST NOT complete the user-facing reply without attempting the log write.
+- If a write fails because of path, permission, lock, or filesystem errors, retry once with the same canonical path after re-reading the file.
+- If the retry fails, the assistant MUST state in the reply that logging failed and include the exact attempted path: **`prompts/prompts-ICS.md`**.
+- The assistant MUST NOT claim the prompt was logged unless verification succeeded.
+- If concurrent sessions are detected or suspected, the assistant MUST use the lock algorithm and verify the final block after writing. If verification fails, notify the user immediately so the log can be repaired.
+
+## Prohibited behavior
+
+- MUST NOT sort entries by timestamp after writing.
+- MUST NOT insert a new prompt block anywhere except EOF.
+- MUST NOT rewrite older timestamps to repair order unless the user explicitly asks for log repair.
+- MUST NOT use generic labels such as `Agent`, `Chat`, or `Ask` when the user prompt explicitly names an agent or skill.
+- MUST NOT mix alias styles for the same agent, e.g. `Backend Developer`, `backend`, and `backend-developer`. Use the normalized specific label.
+- MUST NOT log assistant outputs in place of user prompts.
+- MUST NOT duplicate the `# Prompts log` header mid-file.
+- MUST NOT silently skip logging when file tools are available.
+
+## Verification checklist
+
+Before replying to the user, verify:
+
+- [ ] The latest user message appears at the end of **`prompts/prompts-ICS.md`**.
+- [ ] The newest entry has a valid UTC heading: `## Prompt - YYYY-MM-DDTHH:mm:ssZ`.
+- [ ] The newest timestamp is greater than every earlier valid prompt timestamp in the file.
+- [ ] The newest entry includes `### Agent:` and `#### Model:`.
+- [ ] `### Agent:` uses the explicit agent/skill label when one was invoked.
+- [ ] `#### Model:` matches the current model table or a clear fallback identifier.
+- [ ] Previous entries remain unchanged.
+- [ ] There is only one `# Prompts log` header.
+
+## Operational note
+
+Rules do not execute themselves. Assistants MUST invoke available tools to write **`prompts/prompts-ICS.md`** and MUST treat this rule as a checklist on every user-visible reply.
+
+## Extension points
+
+This rule is **Layer 1 (Core Framework)** with project-specific label resolution.
+
+- **Known agent files table:** optionally add the repository's complete `.cursor/agents/*.md` roster if stronger validation is needed.
+- **Known skill files table:** optionally add the repository's complete `.cursor/skills/*/SKILL.md` roster if stronger validation is needed.
+- **Model derivation table:** update when Cursor changes its published model list.
+- **Log file path:** change only if the repository intentionally changes its prompt log convention.
+- Keep timestamp monotonicity, append-only semantics, redaction, verification, and failure behavior universal.
+
+## Consumed by
+
+- **Agents:** all agents under `.cursor/agents/`.
+- **Skills:** all skills under `.cursor/skills/`.
+- **Cursor modes:** Agent, Chat, and Ask.
