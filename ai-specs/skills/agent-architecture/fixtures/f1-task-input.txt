@@ -1,0 +1,10 @@
+Task: Design an agent pipeline for a backend PR review system.
+- Domain: code review (multi-file analysis, comment drafting)
+- Risk: medium (PRs affect production)
+- Surfaces: opencode, cursor
+- Hint: multiple specialists needed (lint, security scan, comment drafter)
+
+Expected key elements in skill response:
+- Pattern: supervisor or hierarchical or pipeline
+- Artifact plan: ≥1 entry with surface, path_or_key, purpose
+- Handoff contract: producer, consumer, payload shape, on_failure

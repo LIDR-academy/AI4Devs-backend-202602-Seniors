@@ -1,5 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Application as PrismaApplication } from '@prisma/client';
 import { Interview } from './Interview';
+import { Candidate } from './Candidate';
+import { InterviewStep } from './InterviewStep';
 
 const prisma = new PrismaClient();
 
@@ -10,7 +12,9 @@ export class Application {
     applicationDate: Date;
     currentInterviewStep: number;
     notes?: string;
-    interviews: Interview[]; // Added this line
+    interviews: Interview[];
+    candidate?: Candidate;
+    interviewStep?: InterviewStep;
 
     constructor(data: any) {
         this.id = data.id;
@@ -19,10 +23,13 @@ export class Application {
         this.applicationDate = new Date(data.applicationDate);
         this.currentInterviewStep = data.currentInterviewStep;
         this.notes = data.notes;
-        this.interviews = data.interviews || []; // Added this line
+        this.interviews = data.interviews || [];
+        this.candidate = data.candidate;
+        this.interviewStep = data.interviewStep;
     }
 
-    async save() {
+    async save(client?: any) {
+        const db = client || prisma;
         const applicationData: any = {
             positionId: this.positionId,
             candidateId: this.candidateId,
@@ -32,12 +39,12 @@ export class Application {
         };
 
         if (this.id) {
-            return await prisma.application.update({
+            return await db.application.update({
                 where: { id: this.id },
                 data: applicationData,
             });
         } else {
-            return await prisma.application.create({
+            return await db.application.create({
                 data: applicationData,
             });
         }
@@ -49,5 +56,10 @@ export class Application {
         });
         if (!data) return null;
         return new Application(data);
+    }
+
+    static async findMany(args: any): Promise<Application[]> {
+        const data = await prisma.application.findMany(args);
+        return data.map(item => new Application(item));
     }
 }

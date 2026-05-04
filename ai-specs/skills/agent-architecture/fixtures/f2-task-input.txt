@@ -1,0 +1,9 @@
+Task: Add a new validation helper to a single utility file.
+- Domain: utility function, low risk, no external side effects
+- Risk: low
+- Surfaces: opencode
+- Hint: single-agent sufficient
+
+Expected key elements in skill response:
+- Pattern: single-agent (or supervisor-with-one-specialist)
+- Artifact plan: surface path listed
