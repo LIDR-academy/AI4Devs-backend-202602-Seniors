@@ -3,6 +3,7 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
+import positionRoutes from './routes/positionRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
@@ -47,6 +48,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
+app.use('/positions', positionRoutes);
 
 // Route for file uploads
 app.post('/upload', uploadFile);

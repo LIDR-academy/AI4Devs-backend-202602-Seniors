@@ -83,5 +83,22 @@ export class Position {
         if (!data) return null;
         return new Position(data);
     }
+
+    static async findCandidateApplications(positionId: number): Promise<Array<{
+        candidate: { firstName: string; lastName: string };
+        currentInterviewStep: number;
+        interviews: Array<{ score: number | null }>;
+    }> | null> {
+        const position = await prisma.position.findUnique({ where: { id: positionId } });
+        if (!position) return null;
+
+        return prisma.application.findMany({
+            where: { positionId },
+            include: {
+                candidate: { select: { firstName: true, lastName: true } },
+                interviews: { select: { score: true } },
+            },
+        });
+    }
 }
 
