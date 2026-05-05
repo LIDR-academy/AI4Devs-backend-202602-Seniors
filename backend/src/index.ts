@@ -21,7 +21,7 @@ declare global {
 dotenv.config();
 const prisma = new PrismaClient();
 const swaggerDocument = yaml.load(
-  fs.readFileSync(`${__dirname}/../../api-spec.yaml`, 'utf8')
+  fs.readFileSync(`${__dirname}/../api-spec.yaml`, 'utf8')
 ) as object;
 
 export const app = express();
