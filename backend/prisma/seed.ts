@@ -227,7 +227,7 @@ async function main() {
     data: {
       interviewFlowId: interviewFlow1.id,
       interviewTypeId: interviewType2.id,
-      name: 'Technical Interview',
+      name: 'Technical Round',
       orderIndex: 2,
     },
   });
@@ -235,9 +235,45 @@ async function main() {
   const interviewStep3 = await prisma.interviewStep.create({
     data: {
       interviewFlowId: interviewFlow1.id,
+      interviewTypeId: interviewType1.id,
+      name: 'HR Interview',
+      orderIndex: 3,
+    },
+  });
+
+  const interviewStep4 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow1.id,
       interviewTypeId: interviewType3.id,
-      name: 'Manager Interview',
-      orderIndex: 2,
+      name: 'Final Round',
+      orderIndex: 4,
+    },
+  });
+
+  const interviewStep5 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow1.id,
+      interviewTypeId: interviewType3.id,
+      name: 'Offer',
+      orderIndex: 5,
+    },
+  });
+
+  const interviewStep6 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow1.id,
+      interviewTypeId: interviewType3.id,
+      name: 'Rejected',
+      orderIndex: 6,
+    },
+  });
+
+  const interviewStep7 = await prisma.interviewStep.create({
+    data: {
+      interviewFlowId: interviewFlow1.id,
+      interviewTypeId: interviewType3.id,
+      name: 'Withdrawn',
+      orderIndex: 7,
     },
   });
 
