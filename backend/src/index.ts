@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 // Extender la interfaz Request para incluir prisma
 declare global {
@@ -17,6 +20,9 @@ declare global {
 
 dotenv.config();
 const prisma = new PrismaClient();
+const swaggerDocument = yaml.load(
+  fs.readFileSync(`${__dirname}/../../api-spec.yaml`, 'utf8')
+) as object;
 
 export const app = express();
 export default app;
@@ -35,6 +41,9 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true
 }));
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
