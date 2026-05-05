@@ -3,8 +3,12 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import candidateRoutes from './routes/candidateRoutes';
+import positionRoutes from './routes/positionRoutes';
 import { uploadFile } from './application/services/fileUploadService';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 // Extender la interfaz Request para incluir prisma
 declare global {
@@ -17,6 +21,9 @@ declare global {
 
 dotenv.config();
 const prisma = new PrismaClient();
+const swaggerDocument = yaml.load(
+  fs.readFileSync(`${__dirname}/../api-spec.yaml`, 'utf8')
+) as object;
 
 export const app = express();
 export default app;
@@ -36,8 +43,12 @@ app.use(cors({
   credentials: true
 }));
 
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
+app.use('/positions', positionRoutes);
 
 // Route for file uploads
 app.post('/upload', uploadFile);
@@ -55,10 +66,12 @@ app.get('/', (req, res) => {
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.type('text/plain'); 
+  res.type('text/plain');
   res.status(500).send('Something broke!');
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running at http://localhost:${port}`);
+  });
+}

@@ -152,6 +152,72 @@ paths:
           description: Bad request (invalid input data)
         '500':
           description: Internal server error
+  /positions:
+    get:
+      summary: Get all positions
+      description: Returns all available positions for the Kanban board dropdown.
+      responses:
+        '200':
+          description: List of all positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - id
+                    - title
+                    - status
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identifier for the position
+                    title:
+                      type: string
+                      description: Title of the position
+                    status:
+                      type: string
+                      description: Current status of the position (e.g., Open, Draft, Closed)
+        '500':
+          description: Internal server error
+  /positions/{id}/candidates:
+    get:
+      summary: Get candidates for a position
+      description: Returns all candidates in process for a given position, including their full name, current interview step and average score.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Numeric ID of the position
+      responses:
+        '200':
+          description: List of candidates for the position
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fullName:
+                      type: string
+                      description: Full name of the candidate (firstName + lastName)
+                    currentInterviewStep:
+                      type: integer
+                      description: ID of the current interview step
+                    averageScore:
+                      type: number
+                      nullable: true
+                      description: Average score across all interviews, null if no scored interviews
+        '400':
+          description: Invalid position ID format (non-numeric)
+        '404':
+          description: Position not found
+        '500':
+          description: Internal server error
   /upload:
     post:
       summary: Upload a file
