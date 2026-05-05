@@ -1,0 +1,60 @@
+name: Sprint Agent — TDD Auto-implementation
+
+on:
+  # Manual trigger from GitHub UI (Actions tab → Run workflow)
+  workflow_dispatch:
+    inputs:
+      ticket_id:
+        description: 'Single ticket ID to process (e.g. L1DR-13). Leave empty to process all To Do tickets.'
+        required: false
+        default: ''
+      verbose:
+        description: 'Show full agent output'
+        type: boolean
+        default: false
+
+  # Uncomment to auto-trigger on sprint start via webhook (advanced)
+  # repository_dispatch:
+  #   types: [sprint-started]
+
+jobs:
+  run-sprint-agent:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: s9/sprint-agent-demo
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sprint-agent/package.json
+
+      - name: Install sprint-agent dependencies
+        run: cd sprint-agent && npm install
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "sprint-agent@ai4devs.com"
+          git config --global user.name "Sprint Agent 🤖"
+
+      - name: Run Sprint Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JIRA_MCP_URL: ${{ secrets.JIRA_MCP_URL }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_PROJECT_KEY: L1DR
+          GITHUB_REPO: LIDR-academy/AI4Devs-backend-202602-Seniors
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TICKET_ID: ${{ github.event.inputs.ticket_id }}
+          VERBOSE: ${{ github.event.inputs.verbose }}
+          CLAUDE_MODEL: claude-sonnet-4-6
+        run: cd sprint-agent && npm start
