@@ -1,5 +1,14 @@
 import { Request, Response } from 'express';
-import { getCandidatesByPositionId } from '../../application/services/positionService';
+import { getAllPositions as getAllPositionsService, getCandidatesByPositionId } from '../../application/services/positionService';
+
+export async function getAllPositions(_req: Request, res: Response): Promise<void> {
+    try {
+        const positions = await getAllPositionsService();
+        res.status(200).json(positions);
+    } catch (error: unknown) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 
 export async function getCandidatesForPosition(req: Request, res: Response): Promise<void> {
     const id = parseInt(req.params.id, 10);

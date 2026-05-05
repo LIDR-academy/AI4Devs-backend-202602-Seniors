@@ -6,6 +6,16 @@ export interface CandidateForPosition {
     readonly averageScore: number | null;
 }
 
+export interface PositionSummary {
+    readonly id: number;
+    readonly title: string;
+    readonly status: string;
+}
+
+export async function getAllPositions(): Promise<PositionSummary[]> {
+    return Position.findAll();
+}
+
 export async function getCandidatesByPositionId(positionId: number): Promise<CandidateForPosition[]> {
     if (!Number.isInteger(positionId) || positionId <= 0) {
         throw new Error('Invalid position ID');

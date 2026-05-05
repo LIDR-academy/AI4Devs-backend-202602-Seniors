@@ -84,6 +84,12 @@ export class Position {
         return new Position(data);
     }
 
+    static async findAll(): Promise<Array<{ id: number; title: string; status: string }>> {
+        return prisma.position.findMany({
+            select: { id: true, title: true, status: true },
+        });
+    }
+
     static async findCandidateApplications(positionId: number): Promise<Array<{
         candidate: { firstName: string; lastName: string };
         currentInterviewStep: number;
